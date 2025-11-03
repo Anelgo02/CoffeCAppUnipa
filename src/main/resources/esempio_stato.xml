@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stato_generale_distributori xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                             xsi:noNamespaceSchemaLocation="stato_distributori.xsd">
+
+    <distributore id="UNIPA-001">
+        <locazione>Edificio 6, Ingresso</locazione>
+        <stato_operativo>attivo</stato_operativo>
+        <livelli_forniture>
+            <caffe_gr>500</caffe_gr>
+            <latte_lt>0.0</latte_lt>
+            <cioccolata_gr>1000</cioccolata_gr>
+            <te_gr>300</te_gr>
+            <zucchero_gr>2000</zucchero_gr>
+            <bicchieri_num>150</bicchieri_num>
+        </livelli_forniture>
+        <guasti>
+            <guasto>
+                <codice>E-102</codice>
+                <descrizione>Fornitura latte esaurita</descrizione>
+                <data_rilevazione>2025-10-31T10:30:00</data_rilevazione>
+            </guasto>
+        </guasti>
+    </distributore>
+
+    <distributore id="UNIPA-002">
+        <locazione>Edificio 8, Piano 1</locazione>
+        <stato_operativo>disattivato</stato_operativo>
+        <livelli_forniture>
+            <caffe_gr>0</caffe_gr>
+            <latte_lt>0.0</latte_lt>
+            <cioccolata_gr>0</cioccolata_gr>
+            <te_gr>0</te_gr>
+            <zucchero_gr>0</zucchero_gr>
+            <bicchieri_num>0</bicchieri_num>
+        </livelli_forniture>
+        <guasti/>
+    </distributore>
+
+    <distributore id="UNIPA-003">
+        <locazione>Biblioteca Centrale</locazione>
+        <stato_operativo>manutenzione</stato_operativo>
+        <livelli_forniture>
+            <caffe_gr>1500</caffe_gr>
+            <latte_lt>2.5</latte_lt>
+            <cioccolata_gr>800</cioccolata_gr>
+            <te_gr>400</te_gr>
+            <zucchero_gr>1500</zucchero_gr>
+            <bicchieri_num>120</bicchieri_num>
+        </livelli_forniture>
+        <guasti>
+            <guasto>
+                <codice>M-001</codice>
+                <descrizione>Manutenzione ordinaria programmata</descrizione>
+                <data_rilevazione>2025-10-31T09:00:00</data_rilevazione>
+            </guasto>
+            <guasto>
+                <codice>E-300</codice>
+                <descrizione>Gettoniera bloccata</descrizione>
+                <data_rilevazione>2025-10-31T09:15:00</data_rilevazione>
+            </guasto>
+        </guasti>
+    </distributore>
+
+</stato_generale_distributori>

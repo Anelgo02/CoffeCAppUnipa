@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:simpleType name="TipoStato">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="attivo"/>
+            <xs:enumeration value="disattivato"/>
+            <xs:enumeration value="manutenzione"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="TipoGuasto">
+        <xs:sequence>
+            <xs:element name="codice" type="xs:string"/>
+            <xs:element name="descrizione" type="xs:string"/>
+            <xs:element name="data_rilevazione" type="xs:dateTime"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TipoDistributore">
+        <xs:sequence>
+            <xs:element name="locazione" type="xs:string"/>
+            <xs:element name="stato_operativo" type="TipoStato"/>
+
+            <xs:element name="livelli_forniture">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="caffe_gr" type="xs:int"/>
+                        <xs:element name="latte_lt" type="xs:decimal"/>
+                        <xs:element name="cioccolata_gr" type="xs:int"/>
+                        <xs:element name="te_gr" type="xs:int"/>
+                        <xs:element name="zucchero_gr" type="xs:int"/>
+                        <xs:element name="bicchieri_num" type="xs:int"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="guasti">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="guasto" type="TipoGuasto" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="id" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:element name="stato_generale_distributori">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="distributore" type="TipoDistributore" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

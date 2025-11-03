@@ -1,0 +1,192 @@
+/* Impostazioni globali */
+:root {
+    --colore-primario: #6f4e37; /* Marrone caffè */
+    --colore-secondario: #f5f5f5; /* Sfondo chiaro */
+    --colore-header: #3a2e25;
+    --colore-testo: #333;
+    --colore-bianco: #ffffff;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: var(--colore-secondario);
+    color: var(--colore-testo);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header e Footer Comuni */
+header, footer {
+    background-color: var(--colore-header);
+    color: var(--colore-bianco);
+    padding: 1rem 2rem;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+footer {
+    margin-top: auto; /* Spinge il footer in fondo */
+    font-size: 0.9rem;
+}
+
+/* Contenitore principale */
+main {
+    flex-grow: 1;
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 20px auto;
+    width: 90%;
+}
+
+/* Stili per i form (Login, Registrazione, Input) */
+.form-container {
+    background-color: var(--colore-bianco);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    max-width: 400px;
+    margin: 2rem auto; /* Centra il box di login */
+}
+
+.form-container h2 {
+    text-align: center;
+    color: var(--colore-primario);
+    margin-top: 0;
+}
+
+.form-container input[type="text"],
+.form-container input[type="email"],
+.form-container input[type="password"],
+.form-container input[type="number"],
+.form-container select {
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Assicura che padding non alteri la larghezza */
+}
+
+.form-container p {
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Pulsanti */
+.btn {
+    display: inline-block;
+    width: 100%;
+    padding: 0.9rem;
+    background-color: var(--colore-primario);
+    color: var(--colore-bianco);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn:hover {
+    background-color: #5a3f2d;
+}
+
+.btn-secondario {
+    background-color: #888;
+}
+.btn-secondario:hover {
+    background-color: #666;
+}
+
+/* Box generico per sezioni */
+.box-sezione {
+    background-color: var(--colore-bianco);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+.box-sezione h3 {
+    color: var(--colore-primario);
+    margin-top: 0;
+    border-bottom: 2px solid var(--colore-secondario);
+    padding-bottom: 0.5rem;
+}
+
+/* Info Utente (per distributore e cliente) */
+.user-info {
+    background-color: var(--colore-primario);
+    color: var(--colore-bianco);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.user-info span {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Stili specifici Distributore */
+.bevande-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.bevanda-btn {
+    padding: 1rem;
+    font-size: 1rem;
+    background-color: #f0f0f0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+}
+.bevanda-btn:hover {
+    border-color: var(--colore-primario);
+    background-color: #e9e9e9;
+}
+
+.controllo-zucchero {
+    margin-top: 1.5rem;
+}
+.controllo-zucchero label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+.controllo-zucchero input[type="range"] {
+    width: 100%;
+}
+
+/* Stili specifici Gestore (tabelle) */
+.tabella-gestione {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+.tabella-gestione th,
+.tabella-gestione td {
+    border: 1px solid #ddd;
+    padding: 0.8rem;
+    text-align: left;
+}
+.tabella-gestione th {
+    background-color: #f4f4f4;
+}
+.tabella-gestione td .btn {
+    width: auto;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    margin-right: 5px;
+}

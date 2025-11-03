@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributore Caffè</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header>
+    <h1>Distributore Automatico UniPA</h1>
+</header>
+<main>
+    <div class="user-info">
+        <span>Utente: Mario Rossi</span>
+        <span>Credito: 3.50 €</span>
+    </div>
+    <div class="box-sezione">
+        <h3>1. Scegli la tua bevanda</h3>
+        <div class="bevande-grid">
+            <button class="bevanda-btn">Caffè Espresso</button>
+            <button class="bevanda-btn">Caffè Lungo</button>
+            <button class="bevanda-btn">Cappuccino</button>
+            <button class="bevanda-btn">Cioccolata Calda</button>
+            <button class="bevanda-btn">Tè al Limone</button>
+            <button class="bevanda-btn">Latte Macchiato</button>
+        </div>
+    </div>
+    <div class="box-sezione">
+        <h3>2. Seleziona quantità zucchero</h3>
+        <div class="controllo-zucchero">
+            <label for="zucchero">Livello:
+                <output id="zucchero_valore">2</output>
+            </label>
+            <input type="range" id="zucchero" name="zucchero" min="0" max="5" value="2" oninput="document.getElementById('zucchero_valore').value=this.value">
+        </div>
+    </div>
+    <button class="btn">EROGA BEVANDA</button>
+</main>
+<footer>
+    <p>Coffee Capp UniPA - Schermo Distributore</p>
+</footer>
+</body>
+</html>
