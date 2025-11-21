@@ -1,0 +1,24 @@
+[
+  {
+    "username": "mario.rossi",
+    "email": "cliente@unipa.it",
+    "password": "password123",
+    "role": "CLIENTE",
+    "fullName": "Marco Rossi",
+    "credit": 3.50
+  },
+  {
+    "username": "luigi.verdi",
+    "email": "manutentore@unipa.it",
+    "password": "password123",
+    "role": "MANUTENTORE",
+    "fullName": "Luigi Verdi"
+  },
+  {
+    "username": "admin",
+    "email": "gestore@unipa.it",
+    "password": "password123",
+    "role": "GESTORE",
+    "fullName": "Amministratore Sistema"
+  }
+]

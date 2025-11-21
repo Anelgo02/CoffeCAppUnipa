@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manutentori>
+    <manutentore id="M001">
+        <nome>Giuseppe</nome>
+        <cognome>Verdi</cognome>
+        <email>g.verdi@unipa.it</email>
+        <telefono>091123456</telefono>
+    </manutentore>
+    <manutentore id="M002">
+        <nome>Lucia</nome>
+        <cognome>Bianchi</cognome>
+        <email>l.bianchi@unipa.it</email>
+        <telefono>091987654</telefono>
+    </manutentore>
+</manutentori>
