@@ -9,33 +9,37 @@
 <body>
 <header>
     <h1>La Mia Area Personale</h1>
+    <button id="btn-logout" >Esci</button>
 </header>
 <main>
     <div class="user-info">
-        <span>Utente: Anna Bianchi</span>
-        <span>Credito: 5.20 €</span>
+        <h3>Benvenuto, <span id="user-fullname">---</span></h3>
+        <p>Il tuo credito residuo è: <strong id="user-credit">0.00 €</strong></p>
     </div>
     <section class="box-sezione" id="connessione">
         <h3>Connetti al Distributore</h3>
         <p>Inserisci l'ID del distributore (lo trovi sullo schermo) per collegarti.</p>
         <form>
-            <label for="dist-id">ID Distributore</label>
-            <input type="text" id="dist-id" name="dist-id" placeholder="Es: UNIPA-001">
-            <button type="submit" class="btn">Connetti</button>
-            <button type="button" class="btn btn-secondario" style="margin-top: 10px;">Scollegati</button>
+            <label for="distributor-id">ID Distributore</label>
+            <input type="text" id="distributor-id" name="dist-id" placeholder="Es: UNIPA-001">
+            <button type="button" id="btn-connect" class="btn ">Connetti</button>
+            <button type="button" id="btn-disconnect" class="btn btn-secondario" style="margin-top: 10px;">Scollegati</button>
         </form>
     </section>
     <section class="box-sezione" id="ricarica">
         <h3>Ricarica Credito</h3>
         <form>
-            <label for="importo">Importo Ricarica (€)</label>
-            <input type="number" id="importo" name="importo" min="1" step="0.50" placeholder="Es: 5.00">
-            <button type="submit" class="btn">Paga e Ricarica</button>
+            <label for="recharge-amount">Importo Ricarica (€)</label>
+            <input type="number" id="recharge-amount" name="importo" min="1" step="0.50" placeholder="Es: 5.00">
+            <button type="submit" id="btn-recharge" class="btn">Paga e Ricarica</button>
         </form>
     </section>
 </main>
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
 </footer>
+
+<script src="../js/apiHelpers.js"></script>
+<script src="../js/client.main.js"></script>
 </body>
 </html>

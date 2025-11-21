@@ -9,6 +9,8 @@
     --colore-header: #3a2e25;
     --colore-testo: #333;
     --colore-bianco: #ffffff;
+    --danger: #e74c3c;
+    --danger-dark: #b63c30;
 }
 
 body {
@@ -21,12 +23,19 @@ body {
     min-height: 100vh;
 }
 
+
+
 /* Header e Footer Comuni */
 header, footer {
     background-color: var(--colore-header);
     color: var(--colore-bianco);
     padding: 1rem 2rem;
     text-align: center;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
 }
 
 header h1 {
@@ -82,6 +91,23 @@ main {
     font-size: 0.9rem;
 }
 
+#btn-logout{
+    display: inline-block;
+    width:auto;
+    padding: 0.8rem;
+    background-color: var(--danger);
+    color: var(--colore-bianco);
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 0.8rem;
+}
+
+#btn-logout:hover{
+    background-color: var(--danger-dark);
+}
+
 /* Pulsanti */
 .btn {
     display: inline-block;
@@ -96,6 +122,7 @@ main {
     text-align: center;
     text-decoration: none;
     box-sizing: border-box;
+    transition: 0.3s;
 }
 
 .btn:hover {
@@ -392,4 +419,8 @@ fieldset{
 
 .drink-btn.selected small {
     color: var(--colore-primario);
+}
+
+section * {
+    margin-bottom: 0.8rem;
 }
