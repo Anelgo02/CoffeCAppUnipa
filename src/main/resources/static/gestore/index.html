@@ -15,50 +15,84 @@
     <section class="box-sezione" id="gestione-distributori">
         <h2>Stato distributori</h2>
         <label>Ricerca ID: <input id="search-id"></label>
-        <button id="btn-search">Cerca</button>
-        <button id="btn-all">Mostra tutti</button>
+        <button class="toggle-btn btn" id="btn-search">Cerca</button>
+        <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
 
+    <div class="table-responsive">
+        <table class="tabella-gestione" >
+            <thead>
+            <tr>
+                <th>ID Distributore</th>
+                <th>Luogo</th>
+                <th>Stato</th>
+                <th>Azioni</th>
+            </tr>
 
-            <table class="tabella-gestione" >
-                <thead>
-                <tr>
-                    <th>ID Distributore</th>
-                    <th>Luogo</th>
-                    <th>Stato</th>
-                    <th>Azioni</th>
-                </tr>
+            </thead>
+            <tbody id="dist-list">
 
-                </thead>
-                <tbody id="dist-list">
-
-                </tbody>
-            </table>
+            </tbody>
+        </table>
+    </div>
 
     </section>
     <section class="box-sezione" id="gestione-addetti">
         <h2>Manutentori</h2>
+        <div class="table-responsive">
         <table class="tabella-gestione" id="man-table">
             <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Cognome</th>
-                    <th>Email</th>
-                    <th>Telefono</th>
-                    <th>Azioni</th>
-                </tr>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th>Email</th>
+                <th>Telefono</th>
+                <th>Azioni</th>
+            </tr>
             </thead>
             <tbody></tbody>
         </table>
+        </div>
 
-        <h3>Aggiungi manutentore</h3>
-        <label>ID <input id="m-id"></label>
-        <label>Nome <input id="m-nome"></label>
-        <label>Cognome <input id="m-cognome"></label>
-        <label>Email <input id="m-email" type="email"></label>
-        <label>Telefono <input id="m-telefono"></label>
-        <button id="m-add">Aggiungi</button>
+        <!-- Sezione aggiunta manutentore -->
 
+        <div class="box-sezione">
+            <h3>Aggiungi manutentore</h3>
+
+            <form id="form-manutentore" onsubmit="return false;">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="m-id">ID Manutentore</label>
+                        <input type="text" id="m-id" placeholder="Es. M-001">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="m-nome">Nome</label>
+                        <input type="text" id="m-nome" placeholder="Es. Mario">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="m-cognome">Cognome</label>
+                        <input type="text" id="m-cognome" placeholder="Es. Rossi">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="m-telefono">Telefono</label>
+                        <input type="text" id="m-telefono" placeholder="Es. 333 1234567">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="m-email">Email</label>
+                        <input type="email" id="m-email" placeholder="Es. mario.rossi@unipa.it">
+                    </div>
+
+                </div>
+
+                <button type="button" id="m-add" class="btn" style="margin-top: 1.5rem;">Aggiungi Manutentore</button>
+            </form>
+        </div>
 
 
     </section>

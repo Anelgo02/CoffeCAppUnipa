@@ -78,7 +78,7 @@ function renderAllDistributors() {
         const stato = d.querySelector("stato_operativo")?.textContent || '';
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${id}</td><td>${loc}</td><td id="state-${id}">${stato}</td>
-      <button data-id="${id}" class="toggle-active btn toggle-btn">Attiva/Disattiva</button>`;
+        <td><button data-id="${id}" class="toggle-active btn toggle-btn">Attiva/Disattiva</button></td>`;
         container.appendChild(tr);
     });
     Array.from(document.getElementsByClassName("toggle-active")).forEach(btn => {

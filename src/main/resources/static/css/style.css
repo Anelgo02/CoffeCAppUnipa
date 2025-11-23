@@ -103,6 +103,11 @@ textarea {
     max-width: 100%;
 }
 
+input,label{
+    display: inline-block;
+
+}
+
 .form-container p {
     text-align: center;
     font-size: 0.9rem;
@@ -350,10 +355,19 @@ fieldset {
     width: 100%;
 }
 
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Abilita lo scroll orizzontale se serve */
+    -webkit-overflow-scrolling: touch; /* Scroll fluido su iPhone/Android */
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
 .tabella-gestione {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
+    margin-bottom:1rem;
     min-width: 500px; /* Forza lo scroll se troppo stretta */
 }
 .tabella-gestione th,
@@ -368,11 +382,21 @@ fieldset {
 
 .toggle-btn{
     width: auto;
+    transition: 0.2s ease;
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
     margin-right: 5px;
     margin-bottom: 5px;
 }
+
+
+.toggle-btn:hover {
+    background-color: var(--colore-primario);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+
 
 
 
@@ -396,6 +420,40 @@ fieldset {
     border: 1px solid crimson;
     border-radius: 4px;
     margin-top: 1.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile: 1 colonna */
+    gap: 1rem; /* Spazio tra i campi */
+}
+
+/* Stile per ogni gruppo Label + Input */
+.form-group {
+    display: flex;
+    flex-direction: column; /* Mette l'etichetta sopra l'input */
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--colore-primario);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+/* Input specifici per questo form (ereditano lo stile base ma sono più rifiniti) */
+.form-group input {
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    border-color: var(--colore-primario);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.1); /* Alone marroncino al focus */
 }
 
 /* =========================================
@@ -423,6 +481,16 @@ fieldset {
 
     #purchase-area fieldset {
         grid-column: 1 / -1; /* La griglia bevande prende tutto lo spazio */
+    }
+
+
+    .form-grid {
+        grid-template-columns: 1fr 1fr; /* Desktop: 2 colonne */
+    }
+
+    /* Classe per far occupare a un campo (es. Email) tutta la larghezza */
+    .full-width {
+        grid-column: 1 / -1;
     }
 }
 
