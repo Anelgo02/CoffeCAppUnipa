@@ -6,7 +6,7 @@ Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
 * Non vi è ancora persistenza su Database relazionale.
 * Le operazioni di lettura iniziale sono gestite tramite **Fetch API** su file statici (JSON/XML).
 * **Persistenza Simulata:** Le operazioni di scrittura (aggiunta/rimozione/modifica) vengono salvate nel **LocalStorage** del browser. Questo garantisce che i dati rimangano consistenti tra le diverse pagine e al ricaricamento della pagina, simulando un vero database.
-
+* **Inizializzazione Dati:** Al primo avvio, l'applicazione popola il LocalStorage leggendo i file statici (`.xml`). Per reinizializzare l'ambiente e tornare ai dati originali, è possibile eseguire il comando `localStorage.clear()` nella **Console del browser (F12)** e ricaricare la pagina.
 ---
 
 ## 2. Istruzioni per l'Esecuzione
