@@ -3,9 +3,9 @@
 ## 1. Panoramica dell'Architettura
 Questo progetto rappresenta il **Modulo Frontend** del sistema "Coffee Capp UniPA".
 Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
-* Non vi è ancora persistenza su Database.
-* Le operazioni asincrone sono gestite tramite **Fetch API** su file statici (JSON/XML) simulando un Backend.
-* La persistenza temporanea (es. credito utente durante la sessione) è gestita tramite **LocalStorage** del browser e variabili in memoria.
+* Non vi è ancora persistenza su Database relazionale.
+* Le operazioni di lettura iniziale sono gestite tramite **Fetch API** su file statici (JSON/XML).
+* **Persistenza Simulata:** Le operazioni di scrittura (aggiunta/rimozione/modifica) vengono salvate nel **LocalStorage** del browser. Questo garantisce che i dati rimangano consistenti tra le diverse pagine e al ricaricamento della pagina, simulando un vero database.
 
 ---
 
@@ -29,7 +29,7 @@ Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
 * **Test Acquisto e Persistenza:**
     1.  Selezionare una bevanda e cliccare **"Eroga"**.
     2.  Il credito visualizzato diminuirà.
-    3.  **Nota Tecnica:** Il nuovo credito viene salvato nel `localStorage` del browser. Anche se il file JSON originale contiene ancora il credito vecchio, il frontend darà priorità al dato aggiornato localmente, simulando correttamente una sessione persistente.
+    3.  **Nota Tecnica:** Il nuovo credito viene salvato nel `localStorage` del browser. Anche se il file JSON originale contiene ancora il credito vecchio, il frontend darà priorità al dato aggiornato localmente.
 
 ### B. Portale Cliente (Login e Dashboard)
 **Pagina:** `http://localhost:8080/login.html`
@@ -41,21 +41,23 @@ Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
     * **Manutentore:** `manutentore@unipa.it` / `password123` → Reindirizza a Pannello Manutenzione.
 * **Dashboard Cliente:** Mostra i dati dell'utente loggato e permette la simulazione di Ricarica e Connessione (i dati aggiornati sono mantenuti in sessione browser).
 
-### C. Pannello Gestore (Gestione CRUD in RAM)
-**Pagina:** `http://localhost:8080/gestore/manutentori.html`
+### C. Pannello Gestore (CRUD Completo con LocalStorage)
+**Pagina:** `http://localhost:8080/gestore/index.html`
 
-* **Caricamento:** All'avvio, la pagina carica la lista iniziale dal file `manutentori.xml`.
-* **Aggiunta/Rimozione:**
-    * È possibile aggiungere un nuovo manutentore compilando il form.
-    * È possibile rimuovere un manutentore dalla tabella.
-* **Nota Importante:** Queste operazioni manipolano l'array di oggetti nella **memoria RAM** di JavaScript.
-    * L'interfaccia si aggiorna immediatamente.
-    * **Attenzione:** Ricaricando la pagina (F5), le modifiche andranno perse poiché non è possibile scrivere fisicamente sul file XML statico lato server via JavaScript. Questo comportamento è previsto in questa fase del progetto.
+Questa sezione è stata rifattorizzata per simulare un'applicazione gestionale completa.
+* **Caricamento Dati:** Al primo avvio, i dati vengono letti dai file XML (`manutentori.xml`, `esempio_stato.xml`). Successivamente, vengono letti dal `localStorage` per mantenere le modifiche.
+* **Gestione Manutentori:**
+    * Visualizzazione tabellare con opzione "Elimina".
+    * **Aggiunta:** Cliccando su "+ Nuovo Manutentore" si viene reindirizzati a una pagina dedicata (`aggiungi_manutentore.html`). Dopo il salvataggio, si ritorna automaticamente alla lista aggiornata.
+* **Gestione Distributori:**
+    * Visualizzazione tabellare con stato colorato (Verde/Giallo/Rosso).
+    * **Aggiunta:** Cliccando su "+ Nuovo Distributore" si accede alla pagina di inserimento dedicata (`aggiungi_distributore.html`).
+    * **Modifica Stato (Popup):** Cliccando sul tasto "Stato" nella tabella, si apre un **Modal (Popup)** che permette di cambiare lo stato in *ATTIVO, IN MANUTENZIONE* o *FUORI SERVIZIO*. La modifica è immediata e persistente.
 
 ### D. Pannello Manutenzione (Lettura XML)
 **Pagina:** `http://localhost:8080/manutenzione/index.html`
 
-* Permette di visualizzare lo stato tecnico di un distributore leggendo il file `esempio_stato.xml`.
+* Permette di visualizzare lo stato tecnico dettagliato di un distributore (livelli, guasti) leggendo il file `esempio_stato.xml`.
 * **Test:** Inserire ID `UNIPA-001` (Stato Attivo) o `UNIPA-002` (Stato Guasto/Manutenzione) per vedere le differenze nel rendering dei dati.
 
 ---
@@ -64,5 +66,5 @@ Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
 I file utilizzati per la simulazione si trovano in `/static/data/`:
 * `connected_user.json`: Simula la presenza NFC/Bluetooth al distributore.
 * `users.json`: Simula il database utenti per il login.
-* `manutentori.xml`: Elenco iniziale addetti.
-* `esempio_stato.xml`: Database stato macchine e guasti.
+* `manutentori.xml`: Elenco iniziale addetti (usato per il primo caricamento).
+* `esempio_stato.xml`: Database stato macchine e guasti (usato per il primo caricamento).

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggiungi Distributore</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header>
+    <h1>Gestione Infrastruttura</h1>
+</header>
+<main>
+    <div class="box-sezione">
+        <h3>Nuovo Distributore</h3>
+        <p>Registra un nuovo distributore nel sistema.</p>
+
+        <form id="form-distributore" onsubmit="return false;">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="d-id">ID Distributore</label>
+                    <input type="text" id="d-id" placeholder="Es. UNIPA-005">
+                </div>
+                <div class="form-group">
+                    <label for="d-loc">Locazione</label>
+                    <input type="text" id="d-loc" placeholder="Es. Edificio 18 - Piano 1">
+                </div>
+                <div class="form-group full-width">
+                    <label for="d-stato">Stato Iniziale</label>
+                    <select id="d-stato">
+                        <option value="ATTIVO">ATTIVO</option>
+                        <option value="IN MANUTENZIONE">IN MANUTENZIONE</option>
+                        <option value="FUORI SERVIZIO">FUORI SERVIZIO</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 10px;">
+                <button type="button" id="btn-save-dist" class="btn">Salva Distributore</button>
+                <a href="index.html" class="btn btn-secondario" style="text-align: center; text-decoration: none;">Annulla</a>
+            </div>
+        </form>
+    </div>
+</main>
+<footer>
+    <p>© 2025 Coffee Capp UniPA</p>
+</footer>
+<script src="../js/apiHelpers.js"></script>
+<script src="../js/manager.add.js"></script>
+</body>
+</html>

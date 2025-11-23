@@ -1,120 +1,235 @@
+// manager.main.js - Gestione Dashboard
+
 const DISTRIBUTORS_XML = "../data/esempio_stato.xml";
 const MANUTENTORI_XML = "../data/manutentori.xml";
 
-let manutentori = []; // array di object
-let distributoriXmlDoc = null;
+// Chiavi per il LocalStorage
+const KEY_MANUTENTORI = "db_manutentori";
+const KEY_DISTRIBUTORI = "db_distributori";
 
-async function loadManutentori() {
-    try {
-        const xml = await fetchXML(MANUTENTORI_XML);
-        const nodes = xml.getElementsByTagName("manutentore");
-        manutentori = [];
-        for (let n of nodes) {
-            manutentori.push({
-                id: n.getAttribute("id"),
-                nome: n.querySelector("nome")?.textContent || '',
-                cognome: n.querySelector("cognome")?.textContent || '',
-                email: n.querySelector("email")?.textContent || '',
-                telefono: n.querySelector("telefono")?.textContent || ''
-            });
-        }
+let manutentori = [];
+let distributori = [];
+
+// Variabile globale per tracciare quale distributore stiamo modificando col popup
+let currentEditingId = null;
+
+// ============================================================
+// LOGICA MANUTENTORI
+// ============================================================
+
+async function initManutentori() {
+    // 1. Controlla se abbiamo dati in memoria locale
+    const saved = localStorage.getItem(KEY_MANUTENTORI);
+
+    if (saved) {
+        manutentori = JSON.parse(saved);
         renderManutentori();
-    } catch (err) {
-        console.error(err);
-        showAlert("Impossibile caricare manutentori.");
+    } else {
+        // 2. Se non ci sono, carica da XML (prima volta)
+        try {
+            const xml = await fetchXML(MANUTENTORI_XML);
+            const nodes = xml.getElementsByTagName("manutentore");
+            manutentori = [];
+            for (let n of nodes) {
+                manutentori.push({
+                    id: n.getAttribute("id"),
+                    nome: n.querySelector("nome")?.textContent || '',
+                    cognome: n.querySelector("cognome")?.textContent || '',
+                    email: n.querySelector("email")?.textContent || '',
+                    telefono: n.querySelector("telefono")?.textContent || ''
+                });
+            }
+            // Salva nello storage per la prossima volta
+            localStorage.setItem(KEY_MANUTENTORI, JSON.stringify(manutentori));
+            renderManutentori();
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore caricamento XML Manutentori");
+        }
     }
 }
+
 function renderManutentori() {
     const tbody = document.querySelector("#man-table tbody");
+    if(!tbody) return;
     tbody.innerHTML = "";
+
     manutentori.forEach(m => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${m.id}</td><td>${m.nome}</td><td>${m.cognome}</td><td>${m.email}</td><td>${m.telefono}</td>
-      <td><button class="man-del btn toggle-btn" data-id="${m.id}">Elimina</button></td>`;
+        tr.innerHTML = `
+            <td>${m.id}</td>
+            <td>${m.nome}</td>
+            <td>${m.cognome}</td>
+            <td>${m.email}</td>
+            <td>${m.telefono}</td>
+            <td><button class="man-del btn toggle-btn" data-id="${m.id}" style="background-color:var(--danger);">Elimina</button></td>
+        `;
         tbody.appendChild(tr);
     });
+
+    // Listener Elimina
     Array.from(document.getElementsByClassName("man-del")).forEach(btn => {
         btn.addEventListener("click", (e) => {
             const id = e.target.dataset.id;
-            manutentori = manutentori.filter(m => m.id !== id);
-            renderManutentori();
-            showAlert(`Manutentore ${id} rimosso (simulato).`);
+            if(confirm("Vuoi davvero eliminare questo manutentore?")) {
+                manutentori = manutentori.filter(m => m.id !== id);
+                // Aggiorna Storage e UI
+                localStorage.setItem(KEY_MANUTENTORI, JSON.stringify(manutentori));
+                renderManutentori();
+                showAlert(`Manutentore ${id} rimosso.`);
+            }
         });
     });
 }
 
-document.getElementById("m-add").addEventListener("click", () => {
-    const id = document.getElementById("m-id").value.trim();
-    if (!id) { showAlert("ID richiesto"); return; }
-    const newM = {
-        id,
-        nome: document.getElementById("m-nome").value.trim(),
-        cognome: document.getElementById("m-cognome").value.trim(),
-        email: document.getElementById("m-email").value.trim(),
-        telefono: document.getElementById("m-telefono").value.trim()
-    };
-    manutentori.push(newM);
-    renderManutentori();
-    showAlert(`Aggiunto manutentore ${id} (simulato).`);
-});
+// ============================================================
+// LOGICA DISTRIBUTORI (Con Popup Stato)
+// ============================================================
 
-// Distributori / ricerca
-async function loadDistributorsXml() {
-    try {
-        distributoriXmlDoc = await fetchXML(DISTRIBUTORS_XML);
-    } catch (err) {
-        console.error(err);
-        showAlert("Impossibile caricare file distributori.");
+async function initDistributori() {
+    const saved = localStorage.getItem(KEY_DISTRIBUTORI);
+
+    if (saved) {
+        distributori = JSON.parse(saved);
+        renderAllDistributors();
+    } else {
+        try {
+            const xml = await fetchXML(DISTRIBUTORS_XML);
+            const nodes = xml.getElementsByTagName("distributore");
+            distributori = [];
+            for (let d of nodes) {
+                distributori.push({
+                    id: d.getAttribute("id"),
+                    locazione: d.querySelector("locazione")?.textContent || '',
+                    stato: d.querySelector("stato_operativo")?.textContent || 'NON ATTIVO'
+                });
+            }
+            localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
+            renderAllDistributors();
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore caricamento XML Distributori");
+        }
     }
 }
 
-function renderAllDistributors() {
-    const nodes = distributoriXmlDoc.getElementsByTagName("distributore");
+function renderAllDistributors(list = null) {
+    const data = list || distributori;
     const container = document.getElementById("dist-list");
+    if(!container) return;
     container.innerHTML = "";
-    Array.from(nodes).forEach(d => {
-        const id = d.getAttribute("id");
-        const loc = d.querySelector("locazione")?.textContent || '';
-        const stato = d.querySelector("stato_operativo")?.textContent || '';
+
+    if (data.length === 0) {
+        container.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Nessun dato</td></tr>";
+        return;
+    }
+
+    data.forEach(d => {
+        // Colore dinamico in base allo stato
+        let colorStyle = "color: #333;";
+        if (d.stato === "Attivo") colorStyle = "color: #28a745; font-weight: bold;";
+        else if (d.stato === "In manutenzione") colorStyle = "color: #d39e00; font-weight: bold;";
+        else if (d.stato === "Disattivato") colorStyle = "color: #dc3545; font-weight: bold;";
+
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${id}</td><td>${loc}</td><td id="state-${id}">${stato}</td>
-        <td><button data-id="${id}" class="toggle-active btn toggle-btn">Attiva/Disattiva</button></td>`;
+        tr.innerHTML = `
+            <td>${d.id}</td>
+            <td>${d.locazione}</td>
+            <td style="${colorStyle}">${d.stato}</td>
+            <td>
+                <button data-id="${d.id}" class="btn-open-modal btn toggle-btn">Stato</button>
+                <button data-id="${d.id}" class="dist-del btn toggle-btn" style="background-color:var(--danger);">Rimuovi</button>
+            </td>
+        `;
         container.appendChild(tr);
     });
-    Array.from(document.getElementsByClassName("toggle-active")).forEach(btn => {
+
+    attachDistListeners();
+}
+
+function attachDistListeners() {
+    // 1. APERTURA MODAL STATO
+    Array.from(document.getElementsByClassName("btn-open-modal")).forEach(btn => {
         btn.addEventListener("click", (e) => {
             const id = e.target.dataset.id;
-            const elState = document.getElementById(`state-${id}`);
-            // Simulazione toggle
-            elState.textContent = (elState.textContent === "attivo") ? "disattivato" : "attivo";
-            showAlert(`Stato distributore ${id} modificato (simulato).`);
+            currentEditingId = id; // Salviamo l'ID corrente
+
+            // Imposta testo nel modal
+            const labelId = document.getElementById("modal-dist-id");
+            if(labelId) labelId.textContent = id;
+
+            // Mostra il modal
+            const modal = document.getElementById("modal-stato");
+            if(modal) modal.classList.remove("visually-hidden");
+        });
+    });
+
+    // 2. RIMOZIONE DISTRIBUTORE
+    Array.from(document.getElementsByClassName("dist-del")).forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const id = e.target.dataset.id;
+            if (confirm(`Sei sicuro di voler rimuovere il distributore ${id}?`)) {
+                distributori = distributori.filter(d => d.id !== id);
+                localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
+                renderAllDistributors();
+                showAlert(`Distributore ${id} rimosso.`);
+            }
         });
     });
 }
 
-document.getElementById("btn-search").addEventListener("click", () => {
-    const id = document.getElementById("search-id").value.trim();
-    if (!distributoriXmlDoc) { showAlert("Carica prima i distributori"); return; }
-    const nodes = distributoriXmlDoc.getElementsByTagName("distributore");
-    let found = null;
-    for (let d of nodes) if (d.getAttribute("id") === id) { found = d; break; }
-    const container = document.getElementById("dist-list");
-    container.innerHTML = "";
-    if (!found) { container.innerHTML = `<p>Distributore ${id} non trovato</p>`; return; }
-    const idn = found.getAttribute("id");
-    const loc = found.querySelector("locazione")?.textContent || '';
-    const stato = found.querySelector("stato_operativo")?.textContent || '';
-    container.innerHTML = `<div><strong>${idn}</strong> - ${loc} - Stato: <span id="state-${idn}">${stato}</span></div>`;
-});
+// ============================================================
+// FUNZIONI GLOBALI PER IL MODAL (Chiamate dall'HTML onclick)
+// ============================================================
 
-document.getElementById("btn-all").addEventListener("click", () => {
-    if (!distributoriXmlDoc) { showAlert("Carica prima i distributori"); return; }
-    renderAllDistributors();
-});
+function closeModal() {
+    const modal = document.getElementById("modal-stato");
+    if(modal) modal.classList.add("visually-hidden");
+    currentEditingId = null;
+}
 
-// init
-(async function() {
-    await loadManutentori();
-    await loadDistributorsXml();
-    renderAllDistributors();
-})();
+function changeStatus(newStatus) {
+    if (!currentEditingId) return;
+
+    // Trova l'elemento nell'array
+    const item = distributori.find(x => x.id === currentEditingId);
+    if (item) {
+        item.stato = newStatus;
+
+        // Salva persistenza
+        localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
+
+        // Aggiorna UI e chiudi
+        renderAllDistributors();
+        closeModal();
+        showAlert(`Stato aggiornato a ${newStatus}`);
+    }
+}
+
+// ============================================================
+// FUNZIONI DI RICERCA
+// ============================================================
+
+const btnSearch = document.getElementById("btn-search");
+if(btnSearch){
+    btnSearch.addEventListener("click", () => {
+        const val = document.getElementById("search-id").value.trim();
+        if(!val) return;
+        const found = distributori.filter(d => d.id.includes(val));
+        renderAllDistributors(found);
+    });
+}
+
+const btnAll = document.getElementById("btn-all");
+if(btnAll){
+    btnAll.addEventListener("click", () => {
+        document.getElementById("search-id").value = "";
+        renderAllDistributors();
+    });
+}
+
+// Avvio
+document.addEventListener("DOMContentLoaded", () => {
+    initManutentori();
+    initDistributori();
+});

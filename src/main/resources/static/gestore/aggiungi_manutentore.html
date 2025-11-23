@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggiungi Manutentore</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header>
+    <h1>Gestione Personale</h1>
+</header>
+<main>
+    <div class="box-sezione">
+        <h3>Nuovo Manutentore</h3>
+        <p>Inserisci i dati del nuovo addetto alla manutenzione.</p>
+
+        <form id="form-manutentore" onsubmit="return false;">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="m-id">ID Manutentore</label>
+                    <input type="text" id="m-id" placeholder="Es. M-001">
+                </div>
+                <div class="form-group">
+                    <label for="m-nome">Nome</label>
+                    <input type="text" id="m-nome" placeholder="Es. Mario">
+                </div>
+                <div class="form-group">
+                    <label for="m-cognome">Cognome</label>
+                    <input type="text" id="m-cognome" placeholder="Es. Rossi">
+                </div>
+                <div class="form-group">
+                    <label for="m-telefono">Telefono</label>
+                    <input type="text" id="m-telefono" placeholder="Es. 333 1234567">
+                </div>
+                <div class="form-group full-width">
+                    <label for="m-email">Email</label>
+                    <input type="email" id="m-email" placeholder="Es. mario.rossi@unipa.it">
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 10px;">
+                <button type="button" id="btn-save-man" class="btn">Salva Manutentore</button>
+                <a href="index.html" class="btn btn-secondario" style="text-align: center; text-decoration: none;">Annulla</a>
+            </div>
+        </form>
+    </div>
+</main>
+<footer>
+    <p>© 2025 Coffee Capp UniPA</p>
+</footer>
+<script src="../js/apiHelpers.js"></script>
+<script src="../js/manager.add.js"></script>
+</body>
+</html>

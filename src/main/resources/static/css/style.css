@@ -103,11 +103,6 @@ textarea {
     max-width: 100%;
 }
 
-input,label{
-    display: inline-block;
-
-}
-
 .form-container p {
     text-align: center;
     font-size: 0.9rem;
@@ -456,6 +451,45 @@ fieldset {
     box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.1); /* Alone marroncino al focus */
 }
 
+/* --- STILI PER IL POPUP (MODAL) --- */
+
+/* Sfondo scuro che copre tutta la pagina */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Nero semi-trasparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Sta sopra a tutto */
+}
+
+/* Il box bianco centrale */
+.modal-box {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+/* Per nascondere il modal (usiamo la tua classe esistente o display:none) */
+.visually-hidden {
+    display: none !important;
+}
+
 /* =========================================
    MEDIA QUERIES (Responsive Design)
    ========================================= */
@@ -470,8 +504,8 @@ fieldset {
 
     #purchase-area label,
     #purchase-area .grid-label {
-        text-align: right; /* Allinea label a destra vicino all'input */
-        margin-bottom: 0;
+        text-align: left; /* Allinea label a destra vicino all'input */
+        margin-bottom: 0.5rem;
         align-self: center;
     }
 

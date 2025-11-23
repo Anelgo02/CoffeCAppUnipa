@@ -9,93 +9,79 @@
 <body>
 <header>
     <h1>Pannello Gestione Sistema</h1>
+    <a href="../login.html" id="btn-logout" style="font-size: 0.8rem; padding: 0.5rem;">Esci</a>
 </header>
 <main>
 
     <section class="box-sezione" id="gestione-distributori">
-        <h2>Stato distributori</h2>
-        <label>Ricerca ID: <input id="search-id"></label>
-        <button class="toggle-btn btn" id="btn-search">Cerca</button>
-        <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+            <h2>Stato distributori</h2>
+            <a href="aggiungi_distributore.html" class="btn" style="width: auto; background-color: var(--colore-primario);">+ Nuovo Distributore</a>
+        </div>
 
-    <div class="table-responsive">
-        <table class="tabella-gestione" >
-            <thead>
-            <tr>
-                <th>ID Distributore</th>
-                <th>Luogo</th>
-                <th>Stato</th>
-                <th>Azioni</th>
-            </tr>
+        <div style="margin-bottom: 1rem;">
+            <label>Ricerca ID: <input id="search-id" style="width:auto; display:inline-block;"></label>
+            <button class="toggle-btn btn" id="btn-search">Cerca</button>
+            <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
+        </div>
 
-            </thead>
-            <tbody id="dist-list">
+        <div class="table-responsive">
+            <table class="tabella-gestione">
+                <thead>
+                <tr>
+                    <th>ID Distributore</th>
+                    <th>Luogo</th>
+                    <th>Stato</th>
+                    <th>Azioni</th>
+                </tr>
+                </thead>
+                <tbody id="dist-list">
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-            </tbody>
-        </table>
+    <section class="box-sezione" id="gestione-addetti">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+            <h2>Manutentori</h2>
+            <a href="aggiungi_manutentore.html" class="btn" style="width: auto; background-color: var(--colore-primario);">+ Nuovo Manutentore</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="tabella-gestione" id="man-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Email</th>
+                    <th>Telefono</th>
+                    <th>Azioni</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div id="modal-stato" class="modal-overlay visually-hidden">
+        <div class="modal-box">
+            <h3>Modifica Stato Distributore</h3>
+            <p>Seleziona il nuovo stato per il distributore <strong id="modal-dist-id">---</strong></p>
+
+            <div class="modal-buttons">
+                <button class="btn" onclick="changeStatus('ATTIVO')" style="background-color: #28a745;">ATTIVO</button>
+                <button class="btn" onclick="changeStatus('IN MANUTENZIONE')" style="background-color: #ffc107; color:#333;">IN MANUTENZIONE</button>
+                <button class="btn" onclick="changeStatus('FUORI SERVIZIO')" style="background-color: #dc3545;">FUORI SERVIZIO</button>
+            </div>
+
+            <button class="btn btn-secondario" onclick="closeModal()" style="margin-top: 1rem;">Annulla</button>
+        </div>
     </div>
 
-    </section>
-    <section class="box-sezione" id="gestione-addetti">
-        <h2>Manutentori</h2>
-        <div class="table-responsive">
-        <table class="tabella-gestione" id="man-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Cognome</th>
-                <th>Email</th>
-                <th>Telefono</th>
-                <th>Azioni</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        </div>
+</main>
 
-        <!-- Sezione aggiunta manutentore -->
-
-        <div class="box-sezione">
-            <h3>Aggiungi manutentore</h3>
-
-            <form id="form-manutentore" onsubmit="return false;">
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label for="m-id">ID Manutentore</label>
-                        <input type="text" id="m-id" placeholder="Es. M-001">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="m-nome">Nome</label>
-                        <input type="text" id="m-nome" placeholder="Es. Mario">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="m-cognome">Cognome</label>
-                        <input type="text" id="m-cognome" placeholder="Es. Rossi">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="m-telefono">Telefono</label>
-                        <input type="text" id="m-telefono" placeholder="Es. 333 1234567">
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="m-email">Email</label>
-                        <input type="email" id="m-email" placeholder="Es. mario.rossi@unipa.it">
-                    </div>
-
-                </div>
-
-                <button type="button" id="m-add" class="btn" style="margin-top: 1.5rem;">Aggiungi Manutentore</button>
-            </form>
-        </div>
-
-
-    </section>
 </main>
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
