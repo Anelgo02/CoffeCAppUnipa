@@ -16,7 +16,7 @@ function loadSession() {
 
     // Controlliamo se c'è un credito aggiornato salvato specificamente per questo utente
     // (Per gestire la persistenza della ricarica come fatto per il distributore)
-    const savedCredit = localStorage.getItem("wallet_" + loggedUser.username);
+    const savedCredit = localStorage.getItem("credit_" + loggedUser.username);
     if (savedCredit !== null) {
         loggedUser.credit = parseFloat(savedCredit);
     }
@@ -38,7 +38,7 @@ function initConnectionControls() {
     btnConnect.addEventListener("click", () => {
         const id = inputId.value.trim();
         if (id) {
-            alert(`Connesso al distributore ${id}`);
+            alert(`Connesso al distributore xxx`);
             // In futuro qui faremo una chiamata fetch POST al backend
         } else {
             alert("Inserisci un ID distributore valido.");
@@ -46,7 +46,7 @@ function initConnectionControls() {
     });
 
     btnDisconnect.addEventListener("click", () => {
-        alert("Disconnesso dal distributore.");
+        alert("Disconnesso dal distributore xxx.");
         inputId.value = ""; // Pulisce il campo
     });
 }
@@ -63,7 +63,7 @@ function initRechargeControl() {
             loggedUser.credit += amount;
 
             // Salva persistenza
-            localStorage.setItem("wallet_" + loggedUser.username, loggedUser.credit);
+            localStorage.setItem("credit_" + loggedUser.username, loggedUser.credit);
             // Aggiorniamo anche l'oggetto sessione principale per coerenza
             localStorage.setItem("loggedUser", JSON.stringify(loggedUser));
 
