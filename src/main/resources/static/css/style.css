@@ -1,6 +1,4 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-
 
 /* Impostazioni globali */
 :root {
@@ -11,19 +9,27 @@
     --colore-bianco: #ffffff;
     --danger: #e74c3c;
     --danger-dark: #b63c30;
+    --spacing-std: 1rem;
+}
+
+/* Reset più robusto: include pseudo-elementi */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-    font-family:"Poppins", Arial, sans-serif;
+    font-family: "Poppins", Arial, sans-serif;
     margin: 0;
     background-color: var(--colore-secondario);
     color: var(--colore-testo);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden; /* Previene scroll orizzontale indesiderato */
+    line-height: 1.6;
 }
-
-
 
 /* Header e Footer Comuni */
 header, footer {
@@ -36,6 +42,9 @@ header, footer {
 header {
     display: flex;
     justify-content: space-between;
+    align-items: center; /* Centratura verticale */
+    flex-wrap: wrap; /* Permette di andare a capo su schermi piccolissimi */
+    gap: 1rem;
 }
 
 header h1 {
@@ -44,17 +53,17 @@ header h1 {
 }
 
 footer {
-    margin-top: auto; /* Spinge il footer in fondo */
+    margin-top: auto;
     font-size: 0.9rem;
 }
 
 /* Contenitore principale */
 main {
     flex-grow: 1;
-    padding: 2rem;
+    padding: 2rem 1rem; /* Meno padding laterale per mobile */
+    width: 100%;
     max-width: 1000px;
-    margin: 20px auto;
-    width: 90%;
+    margin: 0 auto;
 }
 
 /* Stili per i form (Login, Registrazione, Input) */
@@ -63,48 +72,59 @@ main {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    max-width: 400px;
-    margin: 2rem auto; /* Centra il box di login */
+    width: 100%;
+    max-width: 400px; /* Non supera mai i 400px */
+    margin: 2rem auto;
 }
 
 .form-container h2 {
     text-align: center;
     color: var(--colore-primario);
     margin-top: 0;
+    margin-bottom: 1.5rem;
 }
 
-.form-container input[type="text"],
-.form-container input[type="email"],
-.form-container input[type="password"],
-.form-container input[type="number"],
-.form-container select {
+/* Input Styles Generici */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
     width: 100%;
     padding: 0.8rem;
     margin-bottom: 1rem;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box; /* Assicura che padding non alteri la larghezza */
+    font-family: inherit;
+    font-size: 1rem;
+    background-color: #fff;
+    /* Assicura che l'input non esca dal contenitore */
+    max-width: 100%;
 }
 
 .form-container p {
     text-align: center;
     font-size: 0.9rem;
+    margin-top: 1rem;
 }
 
-#btn-logout{
+#btn-logout {
     display: inline-block;
-    width:auto;
-    padding: 0.8rem;
+    width: auto;
+    padding: 0.5rem 1rem;
     background-color: var(--danger);
     color: var(--colore-bianco);
     border: none;
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    border-radius: 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
 }
 
-#btn-logout:hover{
+#btn-logout:hover {
     background-color: var(--danger-dark);
 }
 
@@ -121,8 +141,8 @@ main {
     font-size: 1rem;
     text-align: center;
     text-decoration: none;
-    box-sizing: border-box;
-    transition: 0.3s;
+    transition: background-color 0.3s ease;
+    font-weight: 500;
 }
 
 .btn:hover {
@@ -144,98 +164,40 @@ main {
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     margin-bottom: 2rem;
 }
+
 .box-sezione h3 {
     color: var(--colore-primario);
     margin-top: 0;
+    margin-bottom: 1rem;
     border-bottom: 2px solid var(--colore-secondario);
     padding-bottom: 0.5rem;
 }
 
-/* Info Utente (per distributore e cliente) */
+/* Spaziatura interna per i contenuti delle sezioni */
+.box-sezione p,
+.box-sezione form {
+    margin-bottom: 1rem;
+}
+
+/* Info Utente (Dashboard) */
 .user-info {
     background-color: var(--colore-primario);
     color: var(--colore-bianco);
-    padding: 1rem;
+    padding: 1.5rem;
     border-radius: 8px;
     margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 .user-info span {
     font-size: 1.2rem;
     font-weight: bold;
 }
 
-/* Stili specifici Distributore */
-.bevande-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-}
-
-.bevanda-btn {
-    padding: 1rem;
-    font-size: 1rem;
-    background-color: #f0f0f0;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: center;
-}
-.bevanda-btn:hover {
-    border-color: var(--colore-primario);
-    background-color: #e9e9e9;
-}
-
-.controllo-zucchero {
-    margin-top: 1.5rem;
-}
-.controllo-zucchero label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-}
-.controllo-zucchero input[type="range"] {
-    width: 100%;
-}
-
-/* Stili specifici Gestore (tabelle) */
-.tabella-gestione {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-}
-.tabella-gestione th,
-.tabella-gestione td {
-    border: 1px solid #ddd;
-    padding: 0.8rem;
-    text-align: left;
-}
-.tabella-gestione th {
-    background-color: #f4f4f4;
-}
-.tabella-gestione td .btn {
-    width: auto;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-    margin-right: 5px;
-}
-
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-
-/*
- * Stile per il box info utente (grigio chiaro)
- */
+/* Stili specifici Distributore - Info */
 .dist-info {
     background-color: var(--colore-secondario);
     border: 1px solid #eee;
@@ -246,139 +208,80 @@ main {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
 }
+
 .dist-info p {
     margin: 0;
     font-size: 1.1rem;
 }
+
 .dist-info strong {
     color: var(--colore-primario);
     font-weight: 600;
-    min-width: 150px; /* Larghezza fissa per evitare scatti */
-    display: inline-block;
-    text-align: right;
 }
 
 /*
  * Stile per il form di acquisto
- * Usa CSS Grid per allineare perfettamente Label e Input
+ * Mobile First: 1 colonna di default
  */
 #purchase-area {
     display: grid;
-    grid-template-columns: 1fr; /* Colonna per label, colonna per input */
-    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
     align-items: center;
     margin-top: 1.5rem;
 }
 
-#purchase-area label, #purchase-area .grid-label {
-    font-weight: 600;
-    text-align: center;
-    color: var(--colore-primario);
-}
-
-fieldset{
+/* Fieldset reset */
+fieldset {
     border: none;
+    margin: 0;
+    padding: 0;
+    /* Per evitare bug di larghezza su alcuni browser */
+    min-width: 0;
 }
 
-/*
- * Stile per select e input
- * (Copiato da .form-container input)
- */
-#purchase-area select {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-family: inherit;
-    font-size: 1rem;
-    background-color: #fff;
+/* Label dentro la griglia */
+#purchase-area label,
+#purchase-area .grid-label {
+    font-weight: 600;
+    color: var(--colore-primario);
+    margin-bottom: 0.2rem; /* Spazio tra label e input su mobile */
 }
 
-/* Stile per il cursore (range) e il suo valore */
+/* Range input wrapper */
 .range-wrapper {
     display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 }
 .range-wrapper input[type="range"] {
     flex-grow: 1;
+    cursor: pointer;
 }
 .range-wrapper output {
     font-weight: 600;
     font-size: 1.2rem;
     color: var(--colore-primario);
+    min-width: 2ch;
 }
 
-
-/*
- * Stile per il pulsante "Eroga"
- * La classe .btn fa il grosso del lavoro.
- * Qui gli diciamo di occupare entrambe le colonne della griglia.
- */
+/* Bottone Eroga */
 #purchase-area #btn-purchase {
-    grid-column: 1 / -1; /* Occupa tutta la larghezza */
     margin-top: 1rem;
     font-size: 1.2rem;
     padding: 1rem;
 }
 
-/*
- * Stile per il box messaggi (es. "Erogazione effettuata")
- */
-#dist-message {
-    text-align: center;
-    font-weight: 600;
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 4px;
-    border: 1px solid transparent;
-}
-/* Stile per quando appare (JS rimuove .visually-hidden) */
-#dist-message:not(.visually-hidden) {
-    display: block;
-    background-color: #e6f7ff; /* Azzurrino per info */
-    border-color: #b3e0ff;
-    color: #0056b3;
-}
-/* Stile per messaggi di errore (impostato da JS) */
-#dist-message[data-type="error"]:not(.visually-hidden) {
-    background-color: #fff0f0;
-    border-color: #ffb3b3;
-    color: #d90000;
-}
-
-
-/*
- * Stile per l'avviso <noscript>
- */
-.noscript-warning {
-    color: crimson;
-    text-align: center;
-    font-weight: bold;
-    padding: 1rem;
-    background-color: #fff0f0;
-    border: 1px solid crimson;
-    border-radius: 4px;
-    margin-top: 1.5rem;
-}
-
-#purchase-area label.grid-label {
-    font-weight: 600;
-    text-align: right;
-    color: var(--colore-primario);
-    padding-top: 0.5rem;
-    align-self: start;
-}
-
-/* * La griglia delle bevande
- */
+/* Griglia delle bevande */
 #drink-grid {
     display: grid;
-    /* Crea colonne flessibili, min 120px, max 1fr */
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem; /* Spazio tra i bottoni */
+    /* Minimo 110px per stare bene anche su schermi piccoli */
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+    width: 100%;
 }
 
 .drink-btn {
@@ -391,6 +294,9 @@ fieldset{
     cursor: pointer;
     text-align: center;
     transition: all 0.2s ease;
+    /* Evita overflow del testo */
+    word-wrap: break-word;
+    width: 100%;
 }
 
 .drink-btn small {
@@ -398,29 +304,157 @@ fieldset{
     font-size: 0.9rem;
     font-weight: 500;
     color: #555;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-/* Stile al passaggio del mouse */
 .drink-btn:hover {
     border-color: #aaa;
     background-color: #e9e9e9;
 }
 
-/* * Stile del bottone SELEZIONATO
- */
 .drink-btn.selected {
     border-color: var(--colore-primario);
-    background-color: #fff; /* Sfondo bianco */
+    background-color: #fff;
     color: var(--colore-primario);
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
     transform: translateY(-2px);
 }
-
 .drink-btn.selected small {
     color: var(--colore-primario);
 }
 
-section * {
-    margin-bottom: 0.8rem;
+/* Messaggi di stato */
+#dist-message {
+    text-align: center;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+#dist-message:not(.visually-hidden) {
+    display: block;
+    background-color: #e6f7ff;
+    border-color: #b3e0ff;
+    color: #0056b3;
+}
+#dist-message[data-type="error"]:not(.visually-hidden) {
+    background-color: #fff0f0;
+    border-color: #ffb3b3;
+    color: #d90000;
+}
+
+/* Tabelle (Gestore) */
+.tabella-wrapper {
+    overflow-x: auto; /* Permette lo scroll orizzontale su tabelle larghe */
+    width: 100%;
+}
+
+.tabella-gestione {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    min-width: 500px; /* Forza lo scroll se troppo stretta */
+}
+.tabella-gestione th,
+.tabella-gestione td {
+    border: 1px solid #ddd;
+    padding: 0.8rem;
+    text-align: left;
+}
+.tabella-gestione th {
+    background-color: #f4f4f4;
+}
+
+.toggle-btn{
+    width: auto;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+
+
+/* Accessibilità */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+.noscript-warning {
+    color: crimson;
+    text-align: center;
+    font-weight: bold;
+    padding: 1rem;
+    background-color: #fff0f0;
+    border: 1px solid crimson;
+    border-radius: 4px;
+    margin-top: 1.5rem;
+}
+
+/* =========================================
+   MEDIA QUERIES (Responsive Design)
+   ========================================= */
+
+/* Tablet e Desktop (> 600px) */
+@media (min-width: 600px) {
+    /* Su schermi grandi, mettiamo label a sinistra e input a destra */
+    #purchase-area {
+        grid-template-columns: 1fr 2fr; /* Colonna label stretta, input larga */
+        gap: 1.5rem;
+    }
+
+    #purchase-area label,
+    #purchase-area .grid-label {
+        text-align: right; /* Allinea label a destra vicino all'input */
+        margin-bottom: 0;
+        align-self: center;
+    }
+
+    #purchase-area #btn-purchase {
+        grid-column: 1 / -1; /* Occupa tutta la larghezza */
+    }
+
+    #purchase-area fieldset {
+        grid-column: 1 / -1; /* La griglia bevande prende tutto lo spazio */
+    }
+}
+
+/* Smartphone (< 600px) */
+@media (max-width: 600px) {
+    main {
+        padding: 1rem;
+    }
+
+    header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-container {
+        padding: 1.5rem;
+        width: 95%;
+    }
+
+    .user-info, .dist-info {
+        flex-direction: column;
+        align-items: stretch; /* Allinea elementi a piena larghezza */
+        text-align: center;
+    }
+
+    .dist-info strong {
+        text-align: center;
+        display: block;
+        margin-top: 0.2rem;
+    }
+
+    .box-sezione {
+        padding: 1rem;
+    }
 }

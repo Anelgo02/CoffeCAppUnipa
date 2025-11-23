@@ -11,55 +11,62 @@
     <h1>Pannello Gestione Sistema</h1>
 </header>
 <main>
-    <section class="box-sezione" id="stato-macchine">
-        <h3>Stato Generale Macchine</h3>
-        <table class="tabella-gestione">
-            <thead>
-            <tr>
-                <th>ID Distributore</th>
-                <th>Stato</th>
-                <th>Livello Caffè</th>
-                <th>Guasti</th>
-                <th>Azioni</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>UNIPA-001</td>
-                <td>Attivo</td>
-                <td>80%</td>
-                <td style="color: red;">Mancanza Latte</td>
-                <td><button class="btn btn-secondario">Disattiva</button></td>
-            </tr>
-            <tr>
-                <td>UNIPA-002</td>
-                <td>Disattivato</td>
-                <td>N/D</td>
-                <td>N/D</td>
-                <td><button class="btn">Attiva</button></td>
-            </tr>
-            <tr>
-                <td>UNIPA-003</td>
-                <td>Attivo</td>
-                <td>15%</td>
-                <td>OK</td>
-                <td><button class="btn btn-secondario">Disattiva</button></td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
+
     <section class="box-sezione" id="gestione-distributori">
-        <h3>Gestione Distributori</h3>
-        <!--        in questa sezione si potranno aggiungere e rimuovere i distributori-->
+        <h2>Stato distributori</h2>
+        <label>Ricerca ID: <input id="search-id"></label>
+        <button id="btn-search">Cerca</button>
+        <button id="btn-all">Mostra tutti</button>
+
+
+            <table class="tabella-gestione" >
+                <thead>
+                <tr>
+                    <th>ID Distributore</th>
+                    <th>Luogo</th>
+                    <th>Stato</th>
+                    <th>Azioni</th>
+                </tr>
+
+                </thead>
+                <tbody id="dist-list">
+
+                </tbody>
+            </table>
+
     </section>
     <section class="box-sezione" id="gestione-addetti">
-        <h3>Gestione Addetti Manutenzione</h3>
-        <!--        in questa sezione si potranno aggiungere e rimuovere gli addetti alla manutenzione-->
+        <h2>Manutentori</h2>
+        <table class="tabella-gestione" id="man-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Email</th>
+                    <th>Telefono</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Aggiungi manutentore</h3>
+        <label>ID <input id="m-id"></label>
+        <label>Nome <input id="m-nome"></label>
+        <label>Cognome <input id="m-cognome"></label>
+        <label>Email <input id="m-email" type="email"></label>
+        <label>Telefono <input id="m-telefono"></label>
+        <button id="m-add">Aggiungi</button>
+
+
 
     </section>
 </main>
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
 </footer>
+<script src="../js/apiHelpers.js"></script>
+<script src="../js/manager.main.js"></script>
 </body>
 </html>

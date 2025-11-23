@@ -9,6 +9,7 @@
 <body>
 <header>
     <h1>Dashboard Manutenzione</h1>
+    <button id="btn-logout" >Esci</button>
 </header>
 <main>
     <section class="box-sezione" id="ricerca-distributore">
@@ -16,25 +17,16 @@
         <form>
             <label for="dist-id">Inserisci ID Distributore</label>
             <input type="text" id="dist-id" name="dist-id" placeholder="Es: UNIPA-001">
-            <button type="submit" class="btn">Carica Stato</button>
+            <button type="button" class="btn" id="btn-load-state">Carica Stato</button>
         </form>
     </section>
-    <section class="box-sezione" id="stato-distributore">
-        <h3>Stato per: UNIPA-001 (Esempio)</h3>
-        <h4>Livelli Forniture</h4>
-        <ul>
-            <li>Caffè: 80%</li>
-            <li>Latte: 30%</li>
-            <li>Bicchieri: 90%</li>
-            <li>Zucchero: 50%</li>
-        </ul>
-        <h4>Guasti Rilevati</h4>
-        <p style="color: red; font-weight: bold;">Codice 503: Mancanza Latte</p>
-        <p>Nessun altro guasto.</p>
-    </section>
+    <div id="maint-result"></div>
 </main>
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
 </footer>
+
+<script src="/js/apiHelpers.js"></script>
+<script src="/js/maintenance.main.js"></script>
 </body>
 </html>
