@@ -1,5 +1,3 @@
-// manager.main.js - Gestione Dashboard
-
 const DISTRIBUTORS_XML = "../data/esempio_stato.xml";
 const MANUTENTORI_XML = "../data/manutentori.xml";
 
@@ -89,10 +87,12 @@ function renderManutentori() {
 async function initDistributori() {
     const saved = localStorage.getItem(KEY_DISTRIBUTORI);
 
+    //controllo se ho nel local storage dei nuovi distributori
     if (saved) {
         distributori = JSON.parse(saved);
         renderAllDistributors();
-    } else {
+
+    } else { //se non ho distributori del localStorage uso il file da BACKEND fittizio
         try {
             const xml = await fetchXML(DISTRIBUTORS_XML);
             const nodes = xml.getElementsByTagName("distributore");
@@ -101,7 +101,7 @@ async function initDistributori() {
                 distributori.push({
                     id: d.getAttribute("id"),
                     locazione: d.querySelector("locazione")?.textContent || '',
-                    stato: d.querySelector("stato_operativo")?.textContent || 'NON ATTIVO'
+                    stato: d.querySelector("stato_operativo")?.textContent || 'disattivo'
                 });
             }
             localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
@@ -114,6 +114,7 @@ async function initDistributori() {
 }
 
 function renderAllDistributors(list = null) {
+
     const data = list || distributori;
     const container = document.getElementById("dist-list");
     if(!container) return;
@@ -210,15 +211,31 @@ function changeStatus(newStatus) {
 // FUNZIONI DI RICERCA
 // ============================================================
 
+
 const btnSearch = document.getElementById("btn-search");
 if(btnSearch){
     btnSearch.addEventListener("click", () => {
-        const val = document.getElementById("search-id").value.trim();
-        if(!val) return;
-        const found = distributori.filter(d => d.id.includes(val));
-        renderAllDistributors(found);
+        //trasporto il valore e lo converto (CASE INSENSITIVE)
+        const val = document.getElementById("search-id").value.trim().toUpperCase();
+        if(!val) {
+            showAlert("Inserisci un termine di ricerca!");
+            return;
+        }
+
+        //filtro array controllando i vari parametri
+        const found = distributori.filter(d =>
+                    d.stato.toUpperCase().startsWith(val) ||
+                    d.id.toUpperCase().includes(val) ||
+                    d.locazione.toUpperCase().includes(val)
+        );
+
+            //renderizzo i risultati trovati
+            renderAllDistributors(found);
     });
+
+
 }
+
 
 const btnAll = document.getElementById("btn-all");
 if(btnAll){

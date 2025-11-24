@@ -24,7 +24,7 @@
 
     <distributore id="UNIPA-002">
         <locazione>Edificio 8, Piano 1</locazione>
-        <stato_operativo>disattivato</stato_operativo>
+        <stato_operativo>disattivo</stato_operativo>
         <livelli_forniture>
             <caffe_gr>0</caffe_gr>
             <latte_lt>0.0</latte_lt>
