@@ -33,7 +33,7 @@ async function handleLogin(event) {
             // Redirect in base al ruolo
             switch (user.role) {
                 case "CLIENTE":
-                    window.location.href = "cliente/main.html";
+                    window.location.href = "cliente/index.html";
                     break;
                 case "MANUTENTORE":
                     window.location.href = "manutenzione/index.html";
