@@ -1,6 +1,6 @@
 
 
-const CONNECTED_URL = "../data/connected_user.json"; // path provvisorio
+const CONNECTED_URL = "../data/connected_user.json"; // path provvisorio che mostra utenti connessi
 
 let currentUser = null;
 let messageTimeout = null;
