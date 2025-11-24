@@ -128,9 +128,9 @@ function renderAllDistributors(list = null) {
     data.forEach(d => {
         // Colore dinamico in base allo stato
         let colorStyle = "color: #333;";
-        if (d.stato === "Attivo") colorStyle = "color: #28a745; font-weight: bold;";
-        else if (d.stato === "In manutenzione") colorStyle = "color: #d39e00; font-weight: bold;";
-        else if (d.stato === "Disattivato") colorStyle = "color: #dc3545; font-weight: bold;";
+        if (d.stato.toUpperCase() === "ATTIVO") colorStyle = "color: #28a745; font-weight: bold;";
+        else if (d.stato.toUpperCase() === "MANUTENZIONE") colorStyle = "color: #d39e00; font-weight: bold;";
+        else if (d.stato.toUpperCase() === "DISATTIVO") colorStyle = "color: #dc3545; font-weight: bold;";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `

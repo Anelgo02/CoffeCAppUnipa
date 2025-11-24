@@ -61,7 +61,7 @@ Questa sezione è stata rifattorizzata per simulare un'applicazione gestionale c
 * **Gestione Distributori:**
     * Visualizzazione tabellare con stato colorato (Verde/Giallo/Rosso).
     * **Aggiunta:** Cliccando su "+ Nuovo Distributore" si accede alla pagina di inserimento dedicata (`aggiungi_distributore.html`).
-    * **Modifica Stato (Popup):** Cliccando sul tasto "Stato" nella tabella, si apre un **Modal (Popup)** che permette di cambiare lo stato in *ATTIVO, IN MANUTENZIONE* o *FUORI SERVIZIO*. La modifica è immediata e persistente.
+    * **Modifica Stato (Popup):** Cliccando sul tasto "Stato" nella tabella, si apre un **Modal (Popup)** che permette di cambiare lo stato in *ATTIVO, MANUTENZIONE* o *DISATTIVO*. La modifica è immediata e persistente.
 
 ### D. Pannello Manutenzione (Lettura XML)
 **Pagina:** `http://localhost:8080/manutenzione/index.html`
