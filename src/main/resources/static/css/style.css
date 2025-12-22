@@ -393,6 +393,12 @@ fieldset {
 
 
 
+ul{
+    list-style-position: inside;
+}
+
+
+
 
 
 /* Accessibilità */

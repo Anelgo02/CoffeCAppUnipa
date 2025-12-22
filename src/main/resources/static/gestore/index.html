@@ -20,7 +20,7 @@
         </div>
 
         <div style="margin-bottom: 1rem;">
-            <label>Ricerca ID: <input id="search-id" style="width:auto; display:inline-block;"></label>
+            <label>Ricerca(ID, Stato, Locazione): <input id="search-id" style="width:auto; display:inline-block;"></label>
             <button class="toggle-btn btn" id="btn-search">Cerca</button>
             <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
         </div>
@@ -72,8 +72,8 @@
 
             <div class="modal-buttons">
                 <button class="btn" onclick="changeStatus('ATTIVO')" style="background-color: #28a745;">ATTIVO</button>
-                <button class="btn" onclick="changeStatus('IN MANUTENZIONE')" style="background-color: #ffc107; color:#333;">IN MANUTENZIONE</button>
-                <button class="btn" onclick="changeStatus('FUORI SERVIZIO')" style="background-color: #dc3545;">FUORI SERVIZIO</button>
+                <button class="btn" onclick="changeStatus('MANUTENZIONE')" style="background-color: #ffc107; color:#333;">MANUTENZIONE</button>
+                <button class="btn" onclick="changeStatus('DISATTIVO')" style="background-color: #dc3545;">DISATTIVO</button>
             </div>
 
             <button class="btn btn-secondario" onclick="closeModal()" style="margin-top: 1rem;">Annulla</button>

@@ -8,6 +8,8 @@ function createStatusHtml(distributorNode){
     const loc=distributorNode.querySelector("locazione")?.textContent || '';
     const stato=distributorNode.querySelector("stato_operativo").textContent || '';
 
+    //creo il codice HTML che andro' a inserire nella pagina principale
+
     let html = `<h3>Distributore ${id}</h3>`;
     html += `<p>Stato Operativo: ${stato}</p>`;
     html += `<p>Locazione: ${loc}</p>`;
@@ -49,6 +51,7 @@ document.getElementById("btn-logout").addEventListener("click", () => {
     window.location.href = "../login.html";
 });
 
+//listener per il bottone
 document.getElementById("btn-load-state").addEventListener("click", async () =>{
     const id=document.getElementById("dist-id").value.trim();//prendo il valore id del distributore
     if(!id){

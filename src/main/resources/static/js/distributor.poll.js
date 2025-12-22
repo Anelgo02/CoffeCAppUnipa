@@ -1,6 +1,6 @@
 
 
-const CONNECTED_URL = "../data/connected_user.json"; // path provvisorio
+const CONNECTED_URL = "../data/connected_user.json"; // path provvisorio che mostra utenti connessi
 
 let currentUser = null;
 let messageTimeout = null;
@@ -21,10 +21,12 @@ function showDistMessage(text, isError = false, timeout = 4000) {
     el.classList.remove("visually-hidden");
 
 
+    //uccido il timer precedente
     if (messageTimeout) clearTimeout(messageTimeout);
+    //imposto il timer
     messageTimeout = setTimeout(() => {
-        el.classList.add("visually-hidden");
-        el.textContent = "";
+        el.classList.add("visually-hidden");//nascondo il box
+        el.textContent = "";//pulisco il testo
     }, timeout);
 }
 
@@ -71,7 +73,6 @@ async function pollConnectedUser() {
             if (form) { form.style.display = ""; form.setAttribute("aria-hidden", "false"); }
 
         } else {
-            // ... (Questa funzione non cambia)
             currentUser = null;
             document.getElementById("dist-username").textContent = "Nessun utente";
             const creditEl = document.getElementById("dist-credit");
@@ -80,8 +81,6 @@ async function pollConnectedUser() {
             const form = document.getElementById("purchase-area");
             if (form) { form.style.display = "none"; form.setAttribute("aria-hidden", "true"); }
 
-            // Non mostrare l'errore se è solo la prima volta
-            // showDistMessage("Nessun utente connesso.", true, 2500);
         }
     } catch (err) {
         console.error("Polling error:", err);
@@ -101,9 +100,9 @@ function initDrinkSelection() {
 
     buttons.forEach(button => {
         button.addEventListener("click", () => {
-            // 1. Rimuovi la classe .selected da TUTTI i bottoni
+            // 1. Rimuovo la classe .selected da TUTTI i bottoni
             buttons.forEach(btn => btn.classList.remove("selected"));
-            // 2. Aggiungi la classe .selected solo al bottone cliccato
+            // 2. Aggiungo la classe .selected solo al bottone cliccato
             button.classList.add("selected");
         });
     });
@@ -121,8 +120,6 @@ function initPurchaseButtons() {
             showDistMessage("Nessun utente connesso.", true, 2500);
             return;
         }
-
-        // --- INIZIO MODIFICA ---
         // Cerca il bottone della bevanda SELEZIONATO
         const selectedBtn = document.querySelector("#drink-grid .drink-btn.selected");
 
@@ -131,10 +128,9 @@ function initPurchaseButtons() {
             return;
         }
 
-        // Prendi il prezzo dal 'data-price' del bottone selezionato
+        // Prendo il prezzo dal 'data-price' del bottone selezionato
         const price = Number(selectedBtn.dataset.price) || 0;
-        const drinkName = selectedBtn.textContent.split(" ")[0]; // Prende il nome (es. "Caffè")
-        // --- FINE MODIFICA ---
+        const drinkName = selectedBtn.textContent.split(" ")[0]; // Prendo il nome (es. "Caffè")
 
         if (Number.isNaN(price) || price <= 0) {
             showDistMessage("Prezzo non valido.", true, 3000);

@@ -4,7 +4,7 @@
     <xs:simpleType name="TipoStato">
         <xs:restriction base="xs:string">
             <xs:enumeration value="attivo"/>
-            <xs:enumeration value="disattivato"/>
+            <xs:enumeration value="disattivo"/>
             <xs:enumeration value="manutenzione"/>
         </xs:restriction>
     </xs:simpleType>
