@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <title>API Test - CoffeeCApp</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+<h1>API Test (DEV)</h1>
+
+<button id="btnGet">GET /api/customer/get?username=cliente1</button>
+
+<pre id="out" style="padding:12px;border:1px solid #ccc;"></pre>
+
+<script>
+    $("#btnGet").on("click", function () {
+        $("#out").text("Chiamata in corso...");
+
+        $.ajax({
+            url: "/api/customer/get",
+            method: "GET",
+            data: { username: "cliente1" }
+        })
+            .done(function (res) {
+                $("#out").text(JSON.stringify(res, null, 2));
+            })
+            .fail(function (xhr) {
+                $("#out").text("ERROR\n" + xhr.status + "\n" + xhr.responseText);
+            });
+    });
+</script>
+</body>
+</html>
