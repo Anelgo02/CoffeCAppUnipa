@@ -10,35 +10,61 @@
 <header aria-labelledby="header_title">
     <h1 id="header_title">Coffee Capp UniPA</h1>
 </header>
+
 <main>
     <div class="form-container">
         <h2>Login</h2>
 
+        <!-- Box errore (mostra solo se c’è ?err=...) -->
+        <p id="login-error" style="display:none; color:#b00020; margin: 10px 0;"></p>
+
         <form id="login-form" action="/route/login" method="post">
 
             <label for="username">Username</label>
-            <input type="text" id="username" name="username" required placeholder="cliente@unipa.it">
+            <input type="text" id="username" name="username" required placeholder="es. cliente1">
 
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required minlength="6">
+            <!-- Password: presente solo come UI, non viene usata in questa fase -->
+            <label for="password">Password (non utilizzata in questa fase)</label>
+            <input type="password" id="password" name="password" placeholder="(ignorata)">
 
             <button type="submit" class="btn">Accedi</button>
         </form>
 
         <p>Sei un cliente? <a href="./cliente/registrazione.html">Registrati</a></p>
+
         <small style="color:gray; display:block; margin-top:20px;">
-            Test users:<br>
-            cliente@unipa.it / password123<br>
-            manutentore@unipa.it / password123<br>
-            gestore@unipa.it / password123
+            Test users (username):<br>
+            cliente1<br>
+            maint1<br>
+            admin1
         </small>
     </div>
 </main>
+
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
 </footer>
 
-<script src="js/apiHelpers.js"></script>
-<script src="js/auth.js"></script>
+<script>
+    // Mostra messaggi in base a ?err=...
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const err = params.get("err");
+        if (!err) return;
+
+        const box = document.getElementById("login-error");
+        if (!box) return;
+
+        const messages = {
+            "missing_username": "Inserisci lo username.",
+            "not_found": "Utente non trovato. Se sei un cliente, registrati.",
+            "server": "Errore di sistema (DB non disponibile o errore JDBC).",
+            "invalid_role": "Ruolo non valido per l’utente."
+        };
+
+        box.textContent = messages[err] || ("Errore: " + err);
+        box.style.display = "block";
+    })();
+</script>
 </body>
 </html>

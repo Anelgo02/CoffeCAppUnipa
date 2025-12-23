@@ -14,7 +14,8 @@ import java.nio.charset.StandardCharsets;
 
 @WebServlet(urlPatterns = {
         "/api/customer/register",
-        "/api/customer/get"
+        "/api/customer/get",
+        "/api/customer/me"
 })
 public class CustomerServlet extends HttpServlet {
 
@@ -22,7 +23,6 @@ public class CustomerServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // POST /api/customer/register
         if (req.getRequestURI().endsWith("/register")) {
             handleRegister(req, resp);
             return;
@@ -32,9 +32,12 @@ public class CustomerServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // GET /api/customer/get?username=...
         if (req.getRequestURI().endsWith("/get")) {
             handleGet(req, resp);
+            return;
+        }
+        if (req.getRequestURI().endsWith("/me")) {
+            handleMe(req, resp);
             return;
         }
         resp.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -43,6 +46,7 @@ public class CustomerServlet extends HttpServlet {
     private void handleRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
         resp.setContentType("application/json");
+        resp.setHeader("Cache-Control", "no-store");
 
         String username = req.getParameter("username");
         String email = req.getParameter("email");
@@ -52,9 +56,13 @@ public class CustomerServlet extends HttpServlet {
             resp.getWriter().write("{\"ok\":false,\"message\":\"username obbligatorio\"}");
             return;
         }
+        if (isBlank(email)) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"email obbligatoria\"}");
+            return;
+        }
 
         try {
-            // se esiste già → errore
             if (userDAO.findByUsername(username).isPresent()) {
                 resp.setStatus(HttpServletResponse.SC_CONFLICT);
                 resp.getWriter().write("{\"ok\":false,\"message\":\"username già esistente\"}");
@@ -70,13 +78,62 @@ public class CustomerServlet extends HttpServlet {
             ex.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.getWriter().write("{\"ok\":false,\"message\":\"DB non disponibile o errore JDBC\"}");
+        }
+    }
 
+    private void handleMe(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        resp.setContentType("application/json");
+        resp.setHeader("Cache-Control", "no-store");
+
+        var session = req.getSession(false);
+        if (session == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"sessione non valida\"}");
+            return;
+        }
+
+        Object u = session.getAttribute(RoutingServlet.SESSION_USERNAME);
+        if (u == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"sessione non valida\"}");
+            return;
+        }
+
+        String username = u.toString();
+
+        try {
+            var opt = userDAO.findByUsername(username);
+            if (opt.isEmpty()) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"utente non trovato\"}");
+                return;
+            }
+
+            var user = opt.get();
+
+            String json = "{"
+                    + "\"ok\":true,"
+                    + "\"id\":" + user.getId() + ","
+                    + "\"username\":\"" + escape(user.getUsername()) + "\","
+                    + "\"role\":\"" + escape(user.getRole()) + "\","
+                    + "\"credit\":" + user.getCredit()
+                    + "}";
+
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().write(json);
+
+        } catch (DaoException ex) {
+            ex.printStackTrace();
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"DB non disponibile o errore JDBC\"}");
         }
     }
 
     private void handleGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
         resp.setContentType("application/json");
+        resp.setHeader("Cache-Control", "no-store");
 
         String username = req.getParameter("username");
         if (isBlank(username)) {
@@ -94,14 +151,14 @@ public class CustomerServlet extends HttpServlet {
             }
 
             var u = opt.get();
-            // JSON semplice (senza librerie)
+
             String json = "{"
                     + "\"ok\":true,"
                     + "\"id\":" + u.getId() + ","
                     + "\"username\":\"" + escape(u.getUsername()) + "\","
                     + "\"email\":\"" + escape(u.getEmail()) + "\","
                     + "\"role\":\"" + escape(u.getRole()) + "\","
-                    + "\"credit\":\"" + u.getCredit() + "\""
+                    + "\"credit\":" + u.getCredit()
                     + "}";
 
             resp.setStatus(HttpServletResponse.SC_OK);

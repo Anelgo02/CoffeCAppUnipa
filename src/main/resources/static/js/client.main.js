@@ -1,89 +1,118 @@
 /**
- * Gestione Dashboard Cliente
+ * Dashboard Cliente - versione DB + sessione server
+ * Richiede: apiHelpers.js (apiGetJSON, apiPostForm, formatCurrency, showAlert)
  */
 
-let loggedUser = null;
+document.addEventListener("DOMContentLoaded", () => {
+    const btnLogout = document.getElementById("btn-logout");
 
-// Carica l'utente loggato dalla "sessione" (localStorage)
-function loadSession() {
-    const userStr = localStorage.getItem("loggedUser");
-    if (!userStr) {
-        alert("Accesso non autorizzato. Effettua il login.");
-        window.location.href = "../login.html"; // Redirect se non loggato
-        return;
-    }
-    loggedUser = JSON.parse(userStr);
+    const elName = document.getElementById("user-fullname");
+    const elCredit = document.getElementById("user-credit");
 
-    // Controlliamo se c'è un credito aggiornato salvato specificamente per questo utente
-    // (Per gestire la persistenza della ricarica come fatto per il distributore)
-    const savedCredit = localStorage.getItem("credit_" + loggedUser.username);
-    if (savedCredit !== null) {
-        loggedUser.credit = parseFloat(savedCredit);
-    }
-
-    updateUI();
-}
-
-function updateUI() {
-    document.getElementById("user-fullname").textContent = loggedUser.fullName;
-    document.getElementById("user-credit").textContent = formatCurrency(loggedUser.credit);
-}
-
-// Gestione Connessione/Disconnessione
-function initConnectionControls() {
     const btnConnect = document.getElementById("btn-connect");
     const btnDisconnect = document.getElementById("btn-disconnect");
-    const inputId = document.getElementById("distributor-id");
+    const distInput = document.getElementById("distributor-id");
 
-    btnConnect.addEventListener("click", () => {
-        const id = inputId.value.trim();
-        if (id) {
-            alert(`Connesso al distributore xxx`);
-            // In futuro qui faremo una chiamata fetch POST al backend
-        } else {
-            alert("Inserisci un ID distributore valido.");
+    const rechargeForm = document.querySelector("#ricarica form");
+    const rechargeInput = document.getElementById("recharge-amount");
+
+    btnLogout.addEventListener("click", () => {
+        window.location.href = "/route/logout";
+    });
+
+    async function loadCustomerMe() {
+        try {
+            const data = await apiGetJSON("/api/customer/me");
+            if (!data.ok) throw new Error("Risposta non valida");
+
+            elName.textContent = data.username || "Cliente";
+            elCredit.textContent = formatCurrency(data.credit);
+
+        } catch (err) {
+            console.error(err);
+            elName.textContent = "Cliente";
+            elCredit.textContent = "—";
+        }
+    }
+
+    async function refreshConnectionStatus() {
+        try {
+            const data = await apiGetJSON("/api/customer/current-connection");
+
+            if (data.connected) {
+                btnConnect.disabled = true;
+                btnDisconnect.disabled = false;
+                distInput.disabled = true;
+            } else {
+                btnConnect.disabled = false;
+                btnDisconnect.disabled = true;
+                distInput.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            window.location.href = "/login.html?err=session";
+        }
+    }
+
+    btnConnect.addEventListener("click", async () => {
+        const code = (distInput.value || "").trim();
+        if (!code) {
+            showAlert("Inserisci l'ID/Codice del distributore (es. UNIPA-001).");
+            return;
+        }
+
+        try {
+            await apiPostForm("/api/customer/connect", { code });
+            showAlert("Connesso al distributore!");
+            await refreshConnectionStatus();
+            await loadCustomerMe();
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore connessione: " + err.message);
         }
     });
 
-    btnDisconnect.addEventListener("click", () => {
-        alert("Disconnesso dal distributore xxx.");
-        inputId.value = ""; // Pulisce il campo
-    });
-}
-
-// Gestione Ricarica
-function initRechargeControl() {
-    const btnRecharge = document.getElementById("btn-recharge");
-    const inputAmount = document.getElementById("recharge-amount");
-
-    btnRecharge.addEventListener("click", () => {
-        const amount = parseFloat(inputAmount.value);
-        if (amount > 0) {
-            // Aggiorna modello dati
-            loggedUser.credit += amount;
-
-            // Salva persistenza
-            localStorage.setItem("credit_" + loggedUser.username, loggedUser.credit);
-            // Aggiorniamo anche l'oggetto sessione principale per coerenza
-            localStorage.setItem("loggedUser", JSON.stringify(loggedUser));
-
-            updateUI();
-            alert(`Ricarica di ${formatCurrency(amount)} effettuata con successo!`);
-            inputAmount.value = ""; // Reset campo
-        } else {
-            alert("Inserisci un importo valido.");
+    btnDisconnect.addEventListener("click", async () => {
+        try {
+            await apiPostForm("/api/customer/disconnect", {});
+            showAlert("Disconnesso.");
+            distInput.value = "";
+            await refreshConnectionStatus();
+            await loadCustomerMe();
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore disconnessione: " + err.message);
         }
     });
 
-    // Logout manuale
-    document.getElementById("btn-logout").addEventListener("click", () => {
-        localStorage.removeItem("loggedUser");
-        window.location.href = "../login.html";
-    });
-}
+    rechargeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadSession();
-    initConnectionControls();
-    initRechargeControl();
+        const amount = parseFloat(rechargeInput.value);
+        if (isNaN(amount) || amount <= 0) {
+            showAlert("Inserisci un importo valido.");
+            return;
+        }
+
+        try {
+            const data = await apiPostForm("/api/customer/topup", { amount: amount.toString() });
+
+            if (data && data.ok && typeof data.credit !== "undefined") {
+                elCredit.textContent = formatCurrency(data.credit);
+                showAlert("Ricarica effettuata!");
+                rechargeInput.value = "";
+            } else {
+                showAlert("Ricarica effettuata, aggiorna la pagina.");
+            }
+
+            await loadCustomerMe();
+
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore ricarica: " + err.message);
+        }
+    });
+
+    loadCustomerMe();
+    refreshConnectionStatus();
 });

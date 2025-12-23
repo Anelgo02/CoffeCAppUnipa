@@ -3,30 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Manutenzione</title>
+    <title>Dashboard Manutentore</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 <header>
-    <h1>Dashboard Manutenzione</h1>
-    <button id="btn-logout" >Esci</button>
+    <h1>Area Manutentore</h1>
+    <button id="btn-logout">Esci</button>
 </header>
+
 <main>
-    <section class="box-sezione" id="ricerca-distributore">
-        <h3>Controllo Stato Distributore</h3>
-        <form>
-            <label for="dist-id">Inserisci ID Distributore</label>
-            <input type="text" id="dist-id" name="dist-id" placeholder="Es: UNIPA-001">
-            <button type="button" class="btn" id="btn-load-state">Carica Stato</button>
-        </form>
-    </section>
-    <div id="maint-result"></div>
+    <div class="form-container" style="max-width: 980px;">
+        <h2>Stato Distributori</h2>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin: 10px 0 20px;">
+            <button class="btn" id="btn-refresh">Aggiorna</button>
+            <small id="maintainer-info" style="color:gray;">—</small>
+        </div>
+
+        <div id="list-distributors">
+            <!-- popolato via JS -->
+        </div>
+    </div>
 </main>
+
 <footer>
     <p>© 2025 Coffee Capp UniPA</p>
 </footer>
 
-<script src="/js/apiHelpers.js"></script>
-<script src="/js/maintenance.main.js"></script>
+<script src="../js/apiHelpers.js"></script>
+<script src="../js/maintainer.main.js"></script>
 </body>
 </html>

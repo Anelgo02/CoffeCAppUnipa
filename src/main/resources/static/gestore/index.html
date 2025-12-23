@@ -7,24 +7,19 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<header>
-    <h1>Pannello Gestione Sistema</h1>
-    <a href="../login.html" id="btn-logout" style="font-size: 0.8rem; padding: 0.5rem;">Esci</a>
-</header>
+<header><h1>Pannello Gestione Sistema</h1> <a href="/route/logout" id="btn-logout"
+                                              style="font-size: 0.8rem; padding: 0.5rem;">Esci</a></header>
 <main>
-
     <section class="box-sezione" id="gestione-distributori">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
-            <h2>Stato distributori</h2>
-            <a href="aggiungi_distributore.html" class="btn" style="width: auto; background-color: var(--colore-primario);">+ Nuovo Distributore</a>
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-            <label>Ricerca(ID, Stato, Locazione): <input id="search-id" style="width:auto; display:inline-block;"></label>
+            <h2>Stato distributori</h2> <a href="aggiungi_distributore.html" class="btn"
+                                           style="width: auto; background-color: var(--colore-primario);">+ Nuovo
+            Distributore</a></div>
+        <div style="margin-bottom: 1rem;"><label>Ricerca(ID, Stato, Locazione): <input id="search-id"
+                                                                                       style="width:auto; display:inline-block;"></label>
             <button class="toggle-btn btn" id="btn-search">Cerca</button>
             <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
         </div>
-
         <div class="table-responsive">
             <table class="tabella-gestione">
                 <thead>
@@ -35,18 +30,15 @@
                     <th>Azioni</th>
                 </tr>
                 </thead>
-                <tbody id="dist-list">
-                </tbody>
+                <tbody id="dist-list"></tbody>
             </table>
         </div>
     </section>
-
     <section class="box-sezione" id="gestione-addetti">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
-            <h2>Manutentori</h2>
-            <a href="aggiungi_manutentore.html" class="btn" style="width: auto; background-color: var(--colore-primario);">+ Nuovo Manutentore</a>
-        </div>
-
+            <h2>Manutentori</h2> <a href="aggiungi_manutentore.html" class="btn"
+                                    style="width: auto; background-color: var(--colore-primario);">+ Nuovo
+            Manutentore</a></div>
         <div class="table-responsive">
             <table class="tabella-gestione" id="man-table">
                 <thead>
@@ -59,33 +51,26 @@
                     <th>Azioni</th>
                 </tr>
                 </thead>
-                <tbody>
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </section>
-
     <div id="modal-stato" class="modal-overlay visually-hidden">
-        <div class="modal-box">
-            <h3>Modifica Stato Distributore</h3>
+        <div class="modal-box"><h3>Modifica Stato Distributore</h3>
             <p>Seleziona il nuovo stato per il distributore <strong id="modal-dist-id">---</strong></p>
-
             <div class="modal-buttons">
                 <button class="btn" onclick="changeStatus('ATTIVO')" style="background-color: #28a745;">ATTIVO</button>
-                <button class="btn" onclick="changeStatus('MANUTENZIONE')" style="background-color: #ffc107; color:#333;">MANUTENZIONE</button>
-                <button class="btn" onclick="changeStatus('DISATTIVO')" style="background-color: #dc3545;">DISATTIVO</button>
+                <button class="btn" onclick="changeStatus('MANUTENZIONE')"
+                        style="background-color: #ffc107; color:#333;">MANUTENZIONE
+                </button>
+                <button class="btn" onclick="changeStatus('DISATTIVO')" style="background-color: #dc3545;">DISATTIVO
+                </button>
             </div>
-
             <button class="btn btn-secondario" onclick="closeModal()" style="margin-top: 1rem;">Annulla</button>
         </div>
     </div>
-
 </main>
-
-</main>
-<footer>
-    <p>© 2025 Coffee Capp UniPA</p>
-</footer>
+<footer><p>© 2025 Coffee Capp UniPA</p></footer>
 <script src="../js/apiHelpers.js"></script>
 <script src="../js/manager.main.js"></script>
 </body>

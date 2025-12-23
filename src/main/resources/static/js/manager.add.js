@@ -1,62 +1,62 @@
-// manager.add.js - Gestione Form di Aggiunta
+document.addEventListener("DOMContentLoaded", () => {
+    const btnSaveMan = document.getElementById("btn-save-man");
+    const btnSaveDist = document.getElementById("btn-save-dist");
 
-const KEY_MANUTENTORI = "db_manutentori";
-const KEY_DISTRIBUTORI = "db_distributori";
+    // ----------------- ADD MAINTAINER -----------------
+    if (btnSaveMan) {
+        btnSaveMan.addEventListener("click", async () => {
+            const id = (document.getElementById("m-id").value || "").trim();
+            const nome = (document.getElementById("m-nome").value || "").trim();
+            const cognome = (document.getElementById("m-cognome").value || "").trim();
+            const telefono = (document.getElementById("m-telefono").value || "").trim();
+            const email = (document.getElementById("m-email").value || "").trim();
 
-// --- GESTIONE AGGIUNTA MANUTENTORE ---
-const btnSaveMan = document.getElementById("btn-save-man");
-if (btnSaveMan) {
-    btnSaveMan.addEventListener("click", () => {
-        const id = document.getElementById("m-id").value.trim();
-        if (!id) { alert("ID richiesto"); return; }
+            if (!id || !nome || !cognome || !telefono || !email) {
+                showAlert("Compila tutti i campi del manutentore.");
+                return;
+            }
 
-        const newItem = {
-            id: id,
-            nome: document.getElementById("m-nome").value.trim(),
-            cognome: document.getElementById("m-cognome").value.trim(),
-            email: document.getElementById("m-email").value.trim(),
-            telefono: document.getElementById("m-telefono").value.trim()
-        };
+            try {
+                await apiPostForm("/api/manager/maintainers/create", {
+                    id, nome, cognome, telefono, email
+                });
 
-        // 1. Carica array esistente o crealo vuoto
-        let list = JSON.parse(localStorage.getItem(KEY_MANUTENTORI)) || [];
+                showAlert("Manutentore salvato!");
+                window.location.href = "index.html";
 
-        // 2. Aggiungi
-        list.push(newItem);
+            } catch (err) {
+                console.error(err);
+                showAlert("Errore salvataggio manutentore: " + err.message);
+            }
+        });
+    }
 
-        // 3. Salva
-        localStorage.setItem(KEY_MANUTENTORI, JSON.stringify(list));
+    // ----------------- ADD DISTRIBUTOR -----------------
+    if (btnSaveDist) {
+        btnSaveDist.addEventListener("click", async () => {
+            const id = (document.getElementById("d-id").value || "").trim();
+            const locazione = (document.getElementById("d-loc").value || "").trim();
+            const stato = (document.getElementById("d-stato").value || "").trim(); // ATTIVO / IN MANUTENZIONE / DISATTIVO
 
-        alert("Manutentore aggiunto con successo!");
-        // 4. Torna alla home
-        window.location.href = "index.html";
-    });
-}
+            if (!id || !locazione || !stato) {
+                showAlert("Compila tutti i campi del distributore.");
+                return;
+            }
 
-// --- GESTIONE AGGIUNTA DISTRIBUTORE ---
-const btnSaveDist = document.getElementById("btn-save-dist");
-if (btnSaveDist) {
-    btnSaveDist.addEventListener("click", () => {
-        const id = document.getElementById("d-id").value.trim();
-        if (!id) { alert("ID richiesto"); return; }
+            try {
+                await apiPostForm("/api/manager/distributors/create", {
+                    id,
+                    locazione,
+                    stato
+                });
 
-        const newItem = {
-            id: id,
-            locazione: document.getElementById("d-loc").value.trim(),
-            stato: document.getElementById("d-stato").value
-        };
+                showAlert("Distributore salvato!");
+                window.location.href = "index.html";
 
-        // 1. Carica array esistente
-        let list = JSON.parse(localStorage.getItem(KEY_DISTRIBUTORI)) || [];
-
-        // 2. Aggiungi
-        list.push(newItem);
-
-        // 3. Salva
-        localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(list));
-
-        alert("Distributore aggiunto con successo!");
-        // 4. Torna alla home
-        window.location.href = "index.html";
-    });
-}
+            } catch (err) {
+                console.error(err);
+                showAlert("Errore salvataggio distributore: " + err.message);
+            }
+        });
+    }
+});

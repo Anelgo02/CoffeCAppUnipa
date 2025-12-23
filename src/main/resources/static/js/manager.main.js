@@ -1,252 +1,178 @@
-const DISTRIBUTORS_XML = "../data/esempio_stato.xml";
-const MANUTENTORI_XML = "../data/manutentori.xml";
-
-// Chiavi per il LocalStorage
-const KEY_MANUTENTORI = "db_manutentori";
-const KEY_DISTRIBUTORI = "db_distributori";
-
-let manutentori = [];
-let distributori = [];
-
-// Variabile globale per tracciare quale distributore stiamo modificando col popup
-let currentEditingId = null;
-
-// ============================================================
-// LOGICA MANUTENTORI
-// ============================================================
-
-async function initManutentori() {
-    // 1. Controlla se abbiamo dati in memoria locale
-    const saved = localStorage.getItem(KEY_MANUTENTORI);
-
-    if (saved) {
-        manutentori = JSON.parse(saved);
-        renderManutentori();
-    } else {
-        // 2. Se non ci sono, carica da XML (prima volta)
-        try {
-            const xml = await fetchXML(MANUTENTORI_XML);
-            const nodes = xml.getElementsByTagName("manutentore");
-            manutentori = [];
-            for (let n of nodes) {
-                manutentori.push({
-                    id: n.getAttribute("id"),
-                    nome: n.querySelector("nome")?.textContent || '',
-                    cognome: n.querySelector("cognome")?.textContent || '',
-                    email: n.querySelector("email")?.textContent || '',
-                    telefono: n.querySelector("telefono")?.textContent || ''
-                });
-            }
-            // Salva nello storage per la prossima volta
-            localStorage.setItem(KEY_MANUTENTORI, JSON.stringify(manutentori));
-            renderManutentori();
-        } catch (err) {
-            console.error(err);
-            showAlert("Errore caricamento XML Manutentori");
-        }
-    }
-}
-
-function renderManutentori() {
-    const tbody = document.querySelector("#man-table tbody");
-    if(!tbody) return;
-    tbody.innerHTML = "";
-
-    manutentori.forEach(m => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${m.id}</td>
-            <td>${m.nome}</td>
-            <td>${m.cognome}</td>
-            <td>${m.email}</td>
-            <td>${m.telefono}</td>
-            <td><button class="man-del btn toggle-btn" data-id="${m.id}" style="background-color:var(--danger);">Elimina</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // Listener Elimina
-    Array.from(document.getElementsByClassName("man-del")).forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            const id = e.target.dataset.id;
-            if(confirm("Vuoi davvero eliminare questo manutentore?")) {
-                manutentori = manutentori.filter(m => m.id !== id);
-                // Aggiorna Storage e UI
-                localStorage.setItem(KEY_MANUTENTORI, JSON.stringify(manutentori));
-                renderManutentori();
-                showAlert(`Manutentore ${id} rimosso.`);
-            }
-        });
-    });
-}
-
-// ============================================================
-// LOGICA DISTRIBUTORI (Con Popup Stato)
-// ============================================================
-
-async function initDistributori() {
-    const saved = localStorage.getItem(KEY_DISTRIBUTORI);
-
-    //controllo se ho nel local storage dei nuovi distributori
-    if (saved) {
-        distributori = JSON.parse(saved);
-        renderAllDistributors();
-
-    } else { //se non ho distributori del localStorage uso il file da BACKEND fittizio
-        try {
-            const xml = await fetchXML(DISTRIBUTORS_XML);
-            const nodes = xml.getElementsByTagName("distributore");
-            distributori = [];
-            for (let d of nodes) {
-                distributori.push({
-                    id: d.getAttribute("id"),
-                    locazione: d.querySelector("locazione")?.textContent || '',
-                    stato: d.querySelector("stato_operativo")?.textContent || 'disattivo'
-                });
-            }
-            localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
-            renderAllDistributors();
-        } catch (err) {
-            console.error(err);
-            showAlert("Errore caricamento XML Distributori");
-        }
-    }
-}
-
-function renderAllDistributors(list = null) {
-
-    const data = list || distributori;
-    const container = document.getElementById("dist-list");
-    if(!container) return;
-    container.innerHTML = "";
-
-    if (data.length === 0) {
-        container.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Nessun dato</td></tr>";
-        return;
-    }
-
-    data.forEach(d => {
-        // Colore dinamico in base allo stato
-        let colorStyle = "color: #333;";
-        if (d.stato.toUpperCase() === "ATTIVO") colorStyle = "color: #28a745; font-weight: bold;";
-        else if (d.stato.toUpperCase() === "MANUTENZIONE") colorStyle = "color: #d39e00; font-weight: bold;";
-        else if (d.stato.toUpperCase() === "DISATTIVO") colorStyle = "color: #dc3545; font-weight: bold;";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${d.id}</td>
-            <td>${d.locazione}</td>
-            <td style="${colorStyle}">${d.stato}</td>
-            <td>
-                <button data-id="${d.id}" class="btn-open-modal btn toggle-btn">Stato</button>
-                <button data-id="${d.id}" class="dist-del btn toggle-btn" style="background-color:var(--danger);">Rimuovi</button>
-            </td>
-        `;
-        container.appendChild(tr);
-    });
-
-    attachDistListeners();
-}
-
-function attachDistListeners() {
-    // 1. APERTURA MODAL STATO
-    Array.from(document.getElementsByClassName("btn-open-modal")).forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            const id = e.target.dataset.id;
-            currentEditingId = id; // Salviamo l'ID corrente
-
-            // Imposta testo nel modal
-            const labelId = document.getElementById("modal-dist-id");
-            if(labelId) labelId.textContent = id;
-
-            // Mostra il modal
-            const modal = document.getElementById("modal-stato");
-            if(modal) modal.classList.remove("visually-hidden");
-        });
-    });
-
-    // 2. RIMOZIONE DISTRIBUTORE
-    Array.from(document.getElementsByClassName("dist-del")).forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            const id = e.target.dataset.id;
-            if (confirm(`Sei sicuro di voler rimuovere il distributore ${id}?`)) {
-                distributori = distributori.filter(d => d.id !== id);
-                localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
-                renderAllDistributors();
-                showAlert(`Distributore ${id} rimosso.`);
-            }
-        });
-    });
-}
-
-// ============================================================
-// FUNZIONI GLOBALI PER IL MODAL (Chiamate dall'HTML onclick)
-// ============================================================
-
-function closeModal() {
-    const modal = document.getElementById("modal-stato");
-    if(modal) modal.classList.add("visually-hidden");
-    currentEditingId = null;
-}
-
-function changeStatus(newStatus) {
-    if (!currentEditingId) return;
-
-    // Trova l'elemento nell'array
-    const item = distributori.find(x => x.id === currentEditingId);
-    if (item) {
-        item.stato = newStatus;
-
-        // Salva persistenza
-        localStorage.setItem(KEY_DISTRIBUTORI, JSON.stringify(distributori));
-
-        // Aggiorna UI e chiudi
-        renderAllDistributors();
-        closeModal();
-        showAlert(`Stato aggiornato a ${newStatus}`);
-    }
-}
-
-// ============================================================
-// FUNZIONI DI RICERCA
-// ============================================================
-
-
-const btnSearch = document.getElementById("btn-search");
-if(btnSearch){
-    btnSearch.addEventListener("click", () => {
-        //trasporto il valore e lo converto (CASE INSENSITIVE)
-        const val = document.getElementById("search-id").value.trim().toUpperCase();
-        if(!val) {
-            showAlert("Inserisci un termine di ricerca!");
-            return;
-        }
-
-        //filtro array controllando i vari parametri
-        const found = distributori.filter(d =>
-                    d.stato.toUpperCase().startsWith(val) ||
-                    d.id.toUpperCase().includes(val) ||
-                    d.locazione.toUpperCase().includes(val)
-        );
-
-            //renderizzo i risultati trovati
-            renderAllDistributors(found);
-    });
-
-
-}
-
-
-const btnAll = document.getElementById("btn-all");
-if(btnAll){
-    btnAll.addEventListener("click", () => {
-        document.getElementById("search-id").value = "";
-        renderAllDistributors();
-    });
-}
-
-// Avvio
 document.addEventListener("DOMContentLoaded", () => {
-    initManutentori();
-    initDistributori();
+    const btnLogout = document.getElementById("btn-logout");
+
+    // --- DISTRIBUTORI ---
+    const distTbody = document.getElementById("dist-list");
+    const searchInput = document.getElementById("search-id");
+    const btnSearch = document.getElementById("btn-search");
+    const btnAll = document.getElementById("btn-all");
+
+    // Modal stato
+    const modal = document.getElementById("modal-stato");
+    const modalDistId = document.getElementById("modal-dist-id");
+    let currentDistIdForModal = null;
+
+    // --- MANUTENTORI ---
+    const manTable = document.querySelector("#man-table tbody");
+
+    // Logout (hai già link diretto, ok così)
+    if (btnLogout) {
+        btnLogout.addEventListener("click", (e) => {
+            // se vuoi invalidare sessione via servlet:
+            // e.preventDefault(); window.location.href = "/route/logout";
+        });
+    }
+
+    // ------------------ LOADERS ------------------
+
+    async function loadMaintainers() {
+        manTable.innerHTML = "";
+        try {
+            const data = await apiGetJSON("/api/manager/maintainers/list");
+            if (!data.ok) throw new Error("Risposta non valida");
+
+            data.items.forEach((m) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td>${escapeHtml(m.id)}</td>
+          <td>${escapeHtml(m.nome)}</td>
+          <td>${escapeHtml(m.cognome)}</td>
+          <td>${escapeHtml(m.email)}</td>
+          <td>${escapeHtml(m.telefono)}</td>
+          <td>
+            <button class="btn btn-secondario" data-del-man="${escapeHtml(m.id)}">Elimina</button>
+          </td>
+        `;
+                manTable.appendChild(tr);
+            });
+
+            // bind delete
+            manTable.querySelectorAll("[data-del-man]").forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                    const id = btn.getAttribute("data-del-man");
+                    if (!confirm(`Eliminare manutentore ${id}?`)) return;
+
+                    try {
+                        await apiPostForm("/api/manager/maintainers/delete", { id });
+                        showAlert("Manutentore eliminato.");
+                        loadMaintainers();
+                    } catch (err) {
+                        console.error(err);
+                        showAlert("Errore eliminazione: " + err.message);
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error(err);
+            showAlert("Sessione non valida o errore server (manutentori).");
+            window.location.href = "/login.html?err=session";
+        }
+    }
+
+    async function loadDistributors(query) {
+        distTbody.innerHTML = "";
+        try {
+            const url = query ? `/api/manager/distributors/list?q=${encodeURIComponent(query)}` : "/api/manager/distributors/list";
+            const data = await apiGetJSON(url);
+            if (!data.ok) throw new Error("Risposta non valida");
+
+            data.items.forEach((d) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td>${escapeHtml(d.id)}</td>
+          <td>${escapeHtml(d.luogo)}</td>
+          <td>${escapeHtml(d.stato)}</td>
+          <td style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" data-status="${escapeHtml(d.id)}">Cambia stato</button>
+            <button class="btn btn-secondario" data-del-dist="${escapeHtml(d.id)}">Elimina</button>
+          </td>
+        `;
+                distTbody.appendChild(tr);
+            });
+
+            // bind status modal
+            distTbody.querySelectorAll("[data-status]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    currentDistIdForModal = btn.getAttribute("data-status");
+                    openModal(currentDistIdForModal);
+                });
+            });
+
+            // bind delete
+            distTbody.querySelectorAll("[data-del-dist]").forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                    const id = btn.getAttribute("data-del-dist");
+                    if (!confirm(`Eliminare distributore ${id}?`)) return;
+
+                    try {
+                        await apiPostForm("/api/manager/distributors/delete", { id });
+                        showAlert("Distributore eliminato.");
+                        loadDistributors(searchInput.value.trim());
+                    } catch (err) {
+                        console.error(err);
+                        showAlert("Errore eliminazione: " + err.message);
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error(err);
+            showAlert("Sessione non valida o errore server (distributori).");
+            window.location.href = "/login.html?err=session";
+        }
+    }
+
+    // ------------------ SEARCH ------------------
+
+    btnSearch.addEventListener("click", () => {
+        const q = (searchInput.value || "").trim();
+        loadDistributors(q);
+    });
+
+    btnAll.addEventListener("click", () => {
+        searchInput.value = "";
+        loadDistributors("");
+    });
+
+    // ------------------ MODAL API (chiamate global per HTML onclick) ------------------
+
+    window.openModal = function (distId) {
+        modalDistId.textContent = distId;
+        modal.classList.remove("visually-hidden");
+    };
+
+    window.closeModal = function () {
+        modal.classList.add("visually-hidden");
+        currentDistIdForModal = null;
+    };
+
+    window.changeStatus = async function (uiStatus) {
+        // UI buttons passano: ATTIVO / MANUTENZIONE / DISATTIVO (tu hai scritto MANUTENZIONE)
+        const id = currentDistIdForModal;
+        if (!id) return;
+
+        try {
+            await apiPostForm("/api/manager/distributors/status", { id, stato: uiStatus });
+            showAlert("Stato aggiornato!");
+            closeModal();
+            loadDistributors((searchInput.value || "").trim());
+        } catch (err) {
+            console.error(err);
+            showAlert("Errore aggiornamento stato: " + err.message);
+        }
+    };
+
+    // ------------------ INIT ------------------
+    loadMaintainers();
+    loadDistributors("");
 });
+
+function escapeHtml(s) {
+    return (s ?? "").toString()
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+}
