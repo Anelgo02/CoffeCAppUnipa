@@ -77,4 +77,29 @@ public class ConnectionDAO {
             throw new DaoException("Errore ConnectionDAO.findActiveDistributorId()", e);
         }
     }
+
+    public String findActiveDistributorCodeByCustomerId(long customerId) {
+        String sql =
+                "SELECT d.code " +
+                        "FROM customer_connections c " +
+                        "JOIN distributors d ON d.id = c.distributor_id " +
+                        "WHERE c.customer_id = ? AND c.disconnected_at IS NULL " +
+                        "ORDER BY c.connected_at DESC " +
+                        "LIMIT 1";
+
+        try (Connection conn = DbConnectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, customerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return rs.getString("code");
+            }
+
+        } catch (SQLException e) {
+            throw new DaoException("Errore findActiveDistributorCodeByCustomerId()", e);
+        }
+    }
+
 }

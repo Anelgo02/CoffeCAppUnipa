@@ -1,3 +1,4 @@
+<!-- /distributore/index.html -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -10,6 +11,14 @@
 
 <header aria-labelledby="distributore-heading">
     <h1 id="distributore-heading">Distributore Automatico UniPA</h1>
+
+    <!-- AZIONI (coerenti con stile: btn + btn-secondario) -->
+    <div style="margin-top: 10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a id="btn-back-customer" class="btn btn-secondario" href="/cliente/index.html">Torna all'area cliente</a>
+        <button id="btn-disconnect-from-dist" type="button" class="btn btn-secondario" style="display:none;">
+            Scollegati
+        </button>
+    </div>
 </header>
 
 <main>
@@ -22,23 +31,20 @@
             <p>Credito: <strong id="dist-credit" data-value="0">0.00 €</strong></p>
         </div>
 
-        <form  id="purchase-area" style="display:none;" aria-hidden="true">
+        <form id="purchase-area" style="display:none;" aria-hidden="true">
 
             <fieldset>
-            <legend class="grid-label">Bevanda:</legend>
-            <div id="drink-grid">
-                <button type="button" class="drink-btn" data-price="1.00">Caffè <small>1.00 €</small></button>
-                <button type="button" class="drink-btn" data-price="1.50">Cappuccino <small>1.50 €</small></button>
-                <button type="button" class="drink-btn" data-price="1.20">Tè <small>1.20 €</small></button>
-                <button type="button" class="drink-btn" data-price="1.10">Caffè Lungo <small>1.10 €</small></button>
-                <button type="button" class="drink-btn" data-price="1.80">Cioccolata <small>1.80 €</small></button>
-                <button type="button" class="drink-btn" data-price="1.60">Latte Macchiato <small>1.60 €</small></button>
-            </div>
+                <legend class="grid-label">Bevanda:</legend>
+                <div id="drink-grid">
+                    <!-- popolata da JS via /api/distributor/beverages -->
+                </div>
             </fieldset>
 
             <label for="sugar-qty">Zucchero:</label>
             <div class="range-wrapper">
-                <input type="range" id="sugar-qty" name="sugar" min="0" max="5" value="1" aria-label="Quantità zucchero" oninput="this.nextElementSibling.value = this.value">
+                <input type="range" id="sugar-qty" name="sugar" min="0" max="5" value="1"
+                       aria-label="Quantità zucchero"
+                       oninput="this.nextElementSibling.value = this.value">
                 <output>1</output>
             </div>
 
@@ -52,6 +58,7 @@
         <div class="noscript-warning">Attenzione: lo script è disabilitato. Alcune funzionalità non saranno disponibili.</div>
     </noscript>
 </main>
+
 <footer>
     <p>Coffee Capp UniPA - Schermo Distributore</p>
 </footer>

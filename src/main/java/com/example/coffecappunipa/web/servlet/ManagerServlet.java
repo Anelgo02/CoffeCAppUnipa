@@ -181,19 +181,44 @@ public class ManagerServlet extends HttpServlet {
     }
 
     // -------------------- DISTRIBUTORS LIST/CRUD --------------------
-    // Nota: qui leggo direttamente perché tu vuoi la tabella: id(code), location_name, status.
-    // (Così JS è semplice e non ti devo far creare un DAO “list”.)
 
     private void handleDistributorsList(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String q = trim(req.getParameter("q")); // filtro testo (id, stato, locazione)
+        String qRaw = trim(req.getParameter("q")); // filtro testo (id, stato, locazione)
 
         String base =
                 "SELECT code, location_name, status " +
                         "FROM distributors ";
 
+        boolean hasQ = !isBlank(qRaw);
+
+        // Normalizzo q per capire se sta cercando uno “stato UI”
+        String qNorm = hasQ ? qRaw.trim().toUpperCase() : null;
+
+        // Se q è uno stato UI, lo trasformo nel valore DB da cercare in status
+        // (E- anche se l'utente scrive ACTIVE/MAINTENANCE/FAULT, lo accetto ugualmente)
+        String qAsDbStatus = null;
+        if (hasQ) {
+            // prova a mappare UI -> DB
+            qAsDbStatus = DistributorAdminDAO.uiStatusToDbEnum(qNorm);
+
+            // se non è una UI status, ma è già un DB status valido, lo uso comunque
+            if (qAsDbStatus == null) {
+                if ("ACTIVE".equals(qNorm) || "MAINTENANCE".equals(qNorm) || "FAULT".equals(qNorm)) {
+                    qAsDbStatus = qNorm;
+                }
+            }
+        }
+
+        // Query: se c'è q, filtro su code/loc come prima.
+        // Per status: se q è uno stato, filtro ESATTAMENTE quel valore DB (più robusto del LIKE).
+        // Altrimenti uso LIKE anche su status per ricerche “libere”.
         String where = "";
-        if (!isBlank(q)) {
-            where = "WHERE code LIKE ? OR location_name LIKE ? OR status LIKE ? ";
+        if (hasQ) {
+            if (qAsDbStatus != null) {
+                where = "WHERE code LIKE ? OR location_name LIKE ? OR status = ? ";
+            } else {
+                where = "WHERE code LIKE ? OR location_name LIKE ? OR status LIKE ? ";
+            }
         }
 
         String sql = base + where + "ORDER BY code";
@@ -201,11 +226,16 @@ public class ManagerServlet extends HttpServlet {
         try (Connection conn = DbConnectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            if (!isBlank(q)) {
-                String like = "%" + q + "%";
+            if (hasQ) {
+                String like = "%" + qRaw + "%";
                 ps.setString(1, like);
                 ps.setString(2, like);
-                ps.setString(3, like);
+
+                if (qAsDbStatus != null) {
+                    ps.setString(3, qAsDbStatus);         // status = 'ACTIVE' ecc.
+                } else {
+                    ps.setString(3, "%" + qNorm + "%");   // status LIKE '%...%'
+                }
             }
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -237,6 +267,7 @@ public class ManagerServlet extends HttpServlet {
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
         }
     }
+
 
     private void handleCreateDistributor(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = trim(req.getParameter("id")); // d-id

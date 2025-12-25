@@ -519,6 +519,17 @@ ul{
         grid-column: 1 / -1; /* Occupa tutta la larghezza */
     }
 
+    @keyframes go-distributor {
+        from{
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to{
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     #purchase-area fieldset {
         grid-column: 1 / -1; /* La griglia bevande prende tutto lo spazio */
     }

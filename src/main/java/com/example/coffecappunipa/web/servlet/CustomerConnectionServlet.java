@@ -140,12 +140,13 @@ public class CustomerConnectionServlet extends HttpServlet {
             }
 
             Long distId = connectionDAO.findActiveDistributorId(userOpt.get().getId());
+            String distCode = connectionDAO.findActiveDistributorCodeByCustomerId(userOpt.get().getId());
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            if (distId == null) {
+            if (distId == null || distCode.isEmpty()) {
                 resp.getWriter().write("{\"ok\":true,\"connected\":false}");
             } else {
-                resp.getWriter().write("{\"ok\":true,\"connected\":true,\"distributorId\":" + distId + "}");
+                resp.getWriter().write("{\"ok\":true,\"connected\":true,\"distributorId\":" + distId + ",\"distributorCode\":\""+ escape(distCode) + "\"}");
             }
 
         } catch (DaoException ex) {
@@ -170,5 +171,10 @@ public class CustomerConnectionServlet extends HttpServlet {
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private String escape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

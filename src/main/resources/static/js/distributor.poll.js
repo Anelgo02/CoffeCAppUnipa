@@ -1,178 +1,316 @@
+// /js/distributor.poll.js
 
-
-const CONNECTED_URL = "../data/connected_user.json"; // path provvisorio che mostra utenti connessi
+// --- API ENDPOINTS ---
+function getDistributorCode() {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get("code") || "").trim();
+}
 
 let currentUser = null;
 let messageTimeout = null;
+const MONITOR_BASE_URL = "https://localhost:8081/monitor";
+
+
 
 /**
- * Funzione per mostrare un messaggio sullo schermo del distributore
+ * Mostra messaggio sullo schermo distributore
  */
-
 function showDistMessage(text, isError = false, timeout = 4000) {
     const el = document.getElementById("dist-message");
     if (!el) return;
+
     el.textContent = text;
-
-    // Imposta lo stile del messaggio (errore o info)
     el.dataset.type = isError ? "error" : "info";
-
-    //elimino la classe che lo nasconde
     el.classList.remove("visually-hidden");
 
-
-    //uccido il timer precedente
     if (messageTimeout) clearTimeout(messageTimeout);
-    //imposto il timer
     messageTimeout = setTimeout(() => {
-        el.classList.add("visually-hidden");//nascondo il box
-        el.textContent = "";//pulisco il testo
+        el.classList.add("visually-hidden");
+        el.textContent = "";
     }, timeout);
 }
 
+/**
+ * Aggiorna UI info utente + credito + mostra/nasconde form acquisto
+ * + mostra/nasconde bottone "Scollega"
+ */
+function renderConnectedState(connected, user) {
+    const usernameEl = document.getElementById("dist-username");
+    const creditEl = document.getElementById("dist-credit");
+    const form = document.getElementById("purchase-area");
 
- // Controlla periodicamente lo stato dell'utente connesso
+    const btnDisconnect = document.getElementById("btn-disconnect-from-dist");
+
+    if (!connected) {
+        currentUser = null;
+
+        if (usernameEl) usernameEl.textContent = "Nessun utente";
+        if (creditEl) {
+            creditEl.dataset.value = "0";
+            creditEl.textContent = "0.00 €";
+        }
+        if (form) {
+            form.style.display = "none";
+            form.setAttribute("aria-hidden", "true");
+        }
+        if (btnDisconnect) btnDisconnect.style.display = "none";
+        return;
+    }
+
+    currentUser = user;
+
+    if (usernameEl) usernameEl.textContent = `${user.username}`;
+    if (creditEl) {
+        creditEl.dataset.value = String(user.credit ?? 0);
+        creditEl.textContent = formatCurrency(user.credit ?? 0);
+    }
+    if (form) {
+        form.style.display = "";
+        form.setAttribute("aria-hidden", "false");
+    }
+    if (btnDisconnect) btnDisconnect.style.display = "";
+
+
+}
+
+/**
+ * POLL: legge dal backend l'eventuale utente connesso
+ * GET /api/distributor/poll?code=...
+ */
 
 async function pollConnectedUser() {
+    const code = getDistributorCode();
+
+    // --- MODIFICA 1: Controllo Codice mancante ---
+    if (!code) {
+        // Mostra il messaggio
+        showDistMessage("Codice mancante. Ritorno alla home...", true, 3000);
+        renderConnectedState(false);
+
+        // Aspetta 3 secondi per far leggere il messaggio, poi reindirizza
+        setTimeout(() => {
+            window.location.href = "/cliente/index.html"; // Cambia con il percorso della tua home
+        }, 3000);
+        return;
+    }
+
     try {
-        const data = await fetchJSON(CONNECTED_URL);
+        const data = await apiGetJSON(`/api/distributor/poll?code=${encodeURIComponent(code)}`);
 
-        if (data && data.connected && data.user) {
+        if (!data || !data.ok) throw new Error("Risposta non valida");
 
-            const serverUser = data.user;
+        // --- MODIFICA 2: Utente non connesso ---
+        if (!data.connected) {
+            renderConnectedState(false);
 
-            //creo una chiave unica per questo utente
-            //mi serve per simulare la persistenza dati
+            // Opzionale: Mostra un avviso visivo che ci si sta scollegando
+            showDistMessage("Nessun utente connesso. Chiusura...", true, 2000);
 
-            const storageKey = "credit_" + serverUser.username;
-
-            //controllo se ho del credito in memoria
-            const savedCredit = localStorage.getItem(storageKey);
-
-            //se presente credito usiamo quello senno' quello del BACKEND fittizio
-
-            let finalCredit = savedCredit !== null ? parseFloat(savedCredit) : Number(serverUser.credit);
-
-            currentUser = {
-                username: String(serverUser.username),
-                fullName: String(serverUser.fullName),
-                credit: finalCredit
-
-            };
-
-            //aggiorno UI
-            document.getElementById("dist-username").textContent = `${currentUser.fullName} (${currentUser.username})`;
-            const creditEl = document.getElementById("dist-credit");
-            if (creditEl) {
-                creditEl.dataset.value = String(currentUser.credit);
-                creditEl.textContent = formatCurrency(currentUser.credit);
-            }
-
-            const form = document.getElementById("purchase-area");
-
-            if (form) { form.style.display = ""; form.setAttribute("aria-hidden", "false"); }
-
-        } else {
-            currentUser = null;
-            document.getElementById("dist-username").textContent = "Nessun utente";
-            const creditEl = document.getElementById("dist-credit");
-            if (creditEl) { creditEl.dataset.value = "0"; creditEl.textContent = "0.00 €"; }
-
-            const form = document.getElementById("purchase-area");
-            if (form) { form.style.display = "none"; form.setAttribute("aria-hidden", "true"); }
-
+            // Reindirizza dopo 2 secondi
+            setTimeout(() => {
+                window.location.href = "/cliente/index.html";
+            }, 2000);
+            return;
         }
+
+        // --- CASO 3: Utente Connesso (Resta qui) ---
+        // dal backend: username, credit
+        renderConnectedState(true, {
+            username: data.username || "-",
+            credit: Number(data.credit ?? 0)
+        });
+
     } catch (err) {
         console.error("Polling error:", err);
         showDistMessage("Errore connessione dati.", true, 3000);
+        renderConnectedState(false);
+        // Reindirizza dopo 2 secondi
+        setTimeout(() => {
+            window.location.href = "/cliente/index.html";
+        }, 2000);
     }
 }
 
 /**
- *  Gestisce la selezione delle bevande
+ * Carica la lista bevande da DB e popola la tua griglia #drink-grid
+ * GET /api/distributor/beverages
  */
-function initDrinkSelection() {
+async function loadBeveragesIntoGrid() {
     const grid = document.getElementById("drink-grid");
     if (!grid) return;
 
-    // Prende tutti i bottoni delle bevande dentro la griglia
-    const buttons = grid.querySelectorAll(".drink-btn");
+    try {
+        const data = await apiGetJSON("/api/distributor/beverages");
+        if (!data || !data.ok) throw new Error("Risposta non valida");
 
-    buttons.forEach(button => {
-        button.addEventListener("click", () => {
-            // 1. Rimuovo la classe .selected da TUTTI i bottoni
-            buttons.forEach(btn => btn.classList.remove("selected"));
-            // 2. Aggiungo la classe .selected solo al bottone cliccato
-            button.classList.add("selected");
+        grid.innerHTML = "";
+
+        data.items.forEach((b) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "drink-btn";
+            btn.dataset.beverageId = String(b.id);
+            btn.dataset.price = String(b.price);
+
+            btn.innerHTML = `${escapeHtml(b.name)} <small>${formatCurrency(b.price)}</small>`;
+
+            btn.addEventListener("click", () => {
+                grid.querySelectorAll(".drink-btn").forEach(x => x.classList.remove("selected"));
+                btn.classList.add("selected");
+            });
+
+            grid.appendChild(btn);
         });
-    });
+
+    } catch (err) {
+        console.error(err);
+        showDistMessage("Errore caricamento bevande.", true, 3500);
+    }
 }
 
 /**
- * Gestisce il click sul pulsante "Eroga"
+ * Eroga bevanda: POST /api/distributor/purchase
+ * Parametri: code, beverageId, sugarQty
  */
-function initPurchaseButtons() {
-    const btn = document.getElementById("btn-purchase");
-    if (!btn) return;
+async function doPurchase() {
+    const code = getDistributorCode();
+    if (!code) {
+        showDistMessage("Manca ?code=... nell'URL", true, 4000);
+        return;
+    }
 
-    btn.addEventListener("click", () => {
-        if (!currentUser) {
-            showDistMessage("Nessun utente connesso.", true, 2500);
-            return;
-        }
-        // Cerca il bottone della bevanda SELEZIONATO
-        const selectedBtn = document.querySelector("#drink-grid .drink-btn.selected");
+    if (!currentUser) {
+        showDistMessage("Nessun utente connesso.", true, 2500);
+        return;
+    }
 
-        if (!selectedBtn) {
-            showDistMessage("Seleziona prima una bevanda.", true, 3000);
-            return;
-        }
+    const selectedBtn = document.querySelector("#drink-grid .drink-btn.selected");
+    if (!selectedBtn) {
+        showDistMessage("Seleziona prima una bevanda.", true, 3000);
+        return;
+    }
 
-        // Prendo il prezzo dal 'data-price' del bottone selezionato
-        const price = Number(selectedBtn.dataset.price) || 0;
-        const drinkName = selectedBtn.textContent.split(" ")[0]; // Prendo il nome (es. "Caffè")
+    const beverageId = selectedBtn.dataset.beverageId;
+    const sugarQty = document.getElementById("sugar-qty")?.value ?? "0";
 
-        if (Number.isNaN(price) || price <= 0) {
-            showDistMessage("Prezzo non valido.", true, 3000);
-            return;
-        }
+    try {
+        const res = await apiPostForm("/api/distributor/purchase", {
+            code,
+            beverageId,
+            sugarQty
+        });
 
-        const creditCents = Math.round(currentUser.credit * 100);
-        const priceCents = Math.round(price * 100);
-
-
-        if (creditCents >= priceCents) {
-            const newCreditCents = creditCents - priceCents;
-            currentUser.credit = newCreditCents / 100;
-
-            const storageKey = "credit_" + currentUser.username;
-            //imposto il local storage
-            localStorage.setItem(storageKey, currentUser.credit);
-
+        if (res && res.ok) {
             const creditEl = document.getElementById("dist-credit");
-            if (creditEl) {
-                creditEl.dataset.value = String(currentUser.credit);
-                creditEl.textContent = formatCurrency(currentUser.credit);
+            if (creditEl && typeof res.credit !== "undefined") {
+                creditEl.dataset.value = String(res.credit);
+                creditEl.textContent = formatCurrency(res.credit);
             }
-            showDistMessage(`Erogazione ${drinkName} effettuata! Addebito: ${formatCurrency(price)}.`, false, 3500);
+            showDistMessage("Erogazione effettuata!", false, 3000);
 
-            // Deseleziona il bottone dopo l'acquisto
             selectedBtn.classList.remove("selected");
-
-        } else {
-            showDistMessage("Credito insufficiente.", true, 3000);
+            pollConnectedUser();
+            return;
         }
-    });
+
+        showDistMessage("Erogazione inviata.", false, 2500);
+        pollConnectedUser();
+
+    } catch (err) {
+        console.error(err);
+
+        const m = (err.message || "").toLowerCase();
+        if (m.includes("credito insufficiente")) {
+            showDistMessage("Credito insufficiente.", true, 3000);
+            return;
+        }
+        if (m.includes("nessun cliente connesso")) {
+            showDistMessage("Nessun utente connesso.", true, 3000);
+            pollConnectedUser();
+            return;
+        }
+
+        showDistMessage("Errore erogazione: " + err.message, true, 3500);
+        pollConnectedUser();
+    }
 }
 
 /**
- * Inizializzazione quando la pagina è pronta
+ * DISCONNECT dal distributore: in realtà è il customer che si disconnette.
+ * POST /api/customer/disconnect
  */
+async function disconnectFromDistributor() {
+    try {
+        const res = await apiPostForm("/api/customer/disconnect", {});
+        if (res && res.ok) {
+            showDistMessage("Scollegato.", false, 2500);
+        } else {
+            showDistMessage("Richiesta di scollegamento inviata.", false, 2500);
+        }
+    } catch (err) {
+        console.error(err);
+        showDistMessage("Errore scollegamento: " + err.message, true, 3500);
+    } finally {
+        pollConnectedUser();
+    }
+}
+
+/**
+ * HEARTBEAT ogni 60s verso la mini-app di monitoraggio (che faremo dopo).
+ * Per ora: se fallisce, ignoriamo.
+ */
+async function sendHeartbeat() {
+    const code = getDistributorCode();
+    if (!code) return;
+
+    try {
+        await fetch(`${MONITOR_BASE_URL}/heartbeat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ code }),
+            cache: "no-cache"
+        });
+    } catch (_) {
+        // ignore
+    }
+}
+
+function escapeHtml(s) {
+    return (s ?? "").toString()
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+// INIT
 document.addEventListener("DOMContentLoaded", () => {
+    loadBeveragesIntoGrid();
     pollConnectedUser().catch(e => console.error(e));
 
-    initDrinkSelection();
-    initPurchaseButtons();
+    const btnPurchase = document.getElementById("btn-purchase");
+    if (btnPurchase) {
+        btnPurchase.addEventListener("click", () => {
+            doPurchase().catch(e => console.error(e));
+        });
+    }
+
+    const distHeader = document.querySelector("#dist-header");
+    const code = getDistributorCode();
+    if(distHeader) {
+        distHeader.textContent += ` ${code}`;
+    }
+
+
+
+    const btnDisconnect = document.getElementById("btn-disconnect-from-dist");
+    if (btnDisconnect) {
+        btnDisconnect.addEventListener("click", () => {
+            disconnectFromDistributor().catch(e => console.error(e));
+        });
+    }
 
     setInterval(pollConnectedUser, 5000);
+    setInterval(sendHeartbeat, 60000);
 });

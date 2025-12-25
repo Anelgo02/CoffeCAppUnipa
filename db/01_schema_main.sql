@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
     );
 
 -- 1b) Profilo manutentore (dati anagrafici per XML/gestore)
--- Nota: la tabella users contiene già il "username" che puoi usare come ID (es. M001).
 CREATE TABLE IF NOT EXISTS maintainer_profiles (
                                                    user_id    BIGINT PRIMARY KEY,
                                                    first_name VARCHAR(80)  NOT NULL,

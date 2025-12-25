@@ -94,11 +94,20 @@ public class CustomerServlet extends HttpServlet {
         }
 
         Object u = session.getAttribute(RoutingServlet.SESSION_USERNAME);
-        if (u == null) {
+        Object r = session.getAttribute(RoutingServlet.SESSION_ROLE);
+        if (u == null || r == null) {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             resp.getWriter().write("{\"ok\":false,\"message\":\"sessione non valida\"}");
             return;
         }
+        if(!"CUSTOMER".equalsIgnoreCase(r.toString())) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"ruolo non autorizzato\"}");
+            return;
+
+        }
+
+
 
         String username = u.toString();
 
