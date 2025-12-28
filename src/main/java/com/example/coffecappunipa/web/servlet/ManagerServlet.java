@@ -104,7 +104,6 @@ public class ManagerServlet extends HttpServlet {
 
     private String toXmlMaintainerId(String username) {
         if (username == null) return "";
-        // XML storico: M001 (senza trattino)
         return username.replace("-", "").replace(" ", "");
     }
 
@@ -138,7 +137,7 @@ public class ManagerServlet extends HttpServlet {
     }
 
     private void handleCreateMaintainer(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String id = trim(req.getParameter("id")); // dal form: m-id
+        String id = trim(req.getParameter("id"));
         String nome = trim(req.getParameter("nome"));
         String cognome = trim(req.getParameter("cognome"));
         String email = trim(req.getParameter("email"));
@@ -184,14 +183,13 @@ public class ManagerServlet extends HttpServlet {
     // -------------------- DISTRIBUTORS LIST/CRUD --------------------
 
     private void handleDistributorsList(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String qRaw = trim(req.getParameter("q")); // filtro testo (id, stato, locazione)
+        String qRaw = trim(req.getParameter("q"));
 
         String base =
                 "SELECT code, location_name, status " +
                         "FROM distributors ";
 
         boolean hasQ = !isBlank(qRaw);
-
         String qNorm = hasQ ? qRaw.trim().toUpperCase() : null;
 
         String qAsDbStatus = null;
@@ -201,6 +199,9 @@ public class ManagerServlet extends HttpServlet {
             if (qAsDbStatus == null) {
                 if ("ACTIVE".equals(qNorm) || "MAINTENANCE".equals(qNorm) || "FAULT".equals(qNorm)) {
                     qAsDbStatus = qNorm;
+                }
+                if ("GUASTO".equals(qNorm)) {
+                    qAsDbStatus = "FAULT";
                 }
             }
         }
@@ -262,9 +263,9 @@ public class ManagerServlet extends HttpServlet {
     }
 
     private void handleCreateDistributor(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String id = trim(req.getParameter("id")); // d-id
-        String loc = trim(req.getParameter("locazione")); // d-loc
-        String statoUi = trim(req.getParameter("stato")); // d-stato
+        String id = trim(req.getParameter("id"));
+        String loc = trim(req.getParameter("locazione"));
+        String statoUi = trim(req.getParameter("stato"));
 
         if (isBlank(id) || isBlank(loc) || isBlank(statoUi)) {
             writeJson(resp, 400, "{\"ok\":false,\"message\":\"id, locazione, stato obbligatori\"}");
@@ -280,7 +281,6 @@ public class ManagerServlet extends HttpServlet {
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
 
-            // BEST-EFFORT: crea/aggiorna anche sul monitor (DB separato)
             MonitorClient.upsertDistributor(id, loc, statusEnum);
 
             writeJson(resp, 201, "{\"ok\":true,\"distributorId\":" + distId + "}");
@@ -301,7 +301,6 @@ public class ManagerServlet extends HttpServlet {
         try {
             distributorAdminDAO.deleteDistributorByCode(id);
 
-            // BEST-EFFORT: rimuovi anche dal monitor
             MonitorClient.deleteDistributor(id);
 
             writeJson(resp, 200, "{\"ok\":true}");
@@ -314,7 +313,7 @@ public class ManagerServlet extends HttpServlet {
 
     private void handleUpdateDistributorStatus(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = trim(req.getParameter("id"));
-        String statoUi = trim(req.getParameter("stato")); // ATTIVO / MANUTENZIONE / DISATTIVO
+        String statoUi = trim(req.getParameter("stato"));
 
         if (isBlank(id) || isBlank(statoUi)) {
             writeJson(resp, 400, "{\"ok\":false,\"message\":\"id e stato obbligatori\"}");
@@ -330,7 +329,6 @@ public class ManagerServlet extends HttpServlet {
         try {
             distributorAdminDAO.updateStatusByCode(id, statusEnum);
 
-            // BEST-EFFORT: aggiorna anche il monitor
             MonitorClient.updateStatus(id, statusEnum);
 
             writeJson(resp, 200, "{\"ok\":true}");
@@ -346,7 +344,7 @@ public class ManagerServlet extends HttpServlet {
         String s = db.trim().toUpperCase();
         if ("ACTIVE".equals(s)) return "ATTIVO";
         if ("MAINTENANCE".equals(s)) return "MANUTENZIONE";
-        if ("FAULT".equals(s)) return "DISATTIVO";
+        if ("FAULT".equals(s)) return "GUASTO";
         return "DISATTIVO";
     }
 

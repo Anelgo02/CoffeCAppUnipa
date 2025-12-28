@@ -18,13 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Cache distributori (per filtro frontend)
     let allDistributors = [];
 
-    // Logout (opzionale)
-    if (btnLogout) {
-        btnLogout.addEventListener("click", (e) => {
-        });
-    }
+    // Base URL Monitor (WAR separata)
+    const MONITOR_BASE_URL = "http://localhost:8081/CoffeMonitor_war_exploded";
 
-    // ------------------ HELPERS ------------------
+    if (btnLogout) {
+        btnLogout.addEventListener("click", () => {});
+    }
 
     function norm(s) {
         return (s ?? "")
@@ -36,15 +35,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function normalizeStatusForSearch(stato) {
         const v = norm(stato);
+
         if (v === "ACTIVE" || v === "ATTIVO") return "ATTIVO";
         if (v === "MAINTENANCE" || v === "MANUTENZIONE" || v === "IN MANUTENZIONE") return "MANUTENZIONE";
-        if (v === "FAULT" || v === "DISATTIVO" || v === "DISABLED") return "DISATTIVO";
+        if (v === "FAULT" || v === "GUASTO") return "GUASTO";
+        if (v === "DISATTIVO" || v === "DISABLED") return "DISATTIVO";
+
         return v;
     }
 
     function mapItalianQueryToDbStatusToken(qUpper) {
         if (qUpper === "ATTIVO") return "ACTIVE";
         if (qUpper === "MANUTENZIONE" || qUpper === "IN MANUTENZIONE") return "MAINTENANCE";
+        if (qUpper === "GUASTO") return "FAULT";
         if (qUpper === "DISATTIVO") return "FAULT";
         return "";
     }
@@ -66,7 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
             distTbody.appendChild(tr);
         });
 
-        // bind status modal
         distTbody.querySelectorAll("[data-status]").forEach((btn) => {
             btn.addEventListener("click", () => {
                 currentDistIdForModal = btn.getAttribute("data-status");
@@ -74,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // bind delete
         distTbody.querySelectorAll("[data-del-dist]").forEach((btn) => {
             btn.addEventListener("click", async () => {
                 const id = btn.getAttribute("data-del-dist");
@@ -122,8 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDistributors(filtered);
     }
 
-    // ------------------ LOADERS ------------------
-
     async function loadMaintainers() {
         manTable.innerHTML = "";
         try {
@@ -160,12 +159,37 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
             });
-
         } catch (err) {
             console.error(err);
             showAlert("Sessione non valida o errore server (manutentori).");
             window.location.href = "/login.html?err=session";
         }
+    }
+
+    async function fetchMonitorMap() {
+        try {
+            const res = await fetch(`${MONITOR_BASE_URL}/api/monitor/map`, { method: "GET" });
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (!data || !data.ok || !Array.isArray(data.items)) return null;
+
+            const map = new Map();
+            for (const it of data.items) {
+                if (!it || !it.code) continue;
+                map.set(String(it.code), String(it.status || ""));
+            }
+            return map;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function monitorStatusToUi(statusDb) {
+        const s = norm(statusDb);
+        if (s === "FAULT") return "GUASTO";
+        if (s === "MAINTENANCE") return "MANUTENZIONE";
+        if (s === "ACTIVE") return "ATTIVO";
+        return "";
     }
 
     async function loadDistributors() {
@@ -175,8 +199,21 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!data.ok) throw new Error("Risposta non valida");
 
             allDistributors = Array.isArray(data.items) ? data.items : [];
-            renderDistributors(allDistributors);
 
+            // Override stati dal Monitor (FAULT -> GUASTO)
+            const monitorMap = await fetchMonitorMap();
+            if (monitorMap) {
+                allDistributors = allDistributors.map((d) => {
+                    const stDb = monitorMap.get(String(d.id));
+                    const uiFromMonitor = monitorStatusToUi(stDb);
+                    if (uiFromMonitor) {
+                        return { ...d, stato: uiFromMonitor };
+                    }
+                    return d;
+                });
+            }
+
+            renderDistributors(allDistributors);
         } catch (err) {
             console.error(err);
             showAlert("Sessione non valida o errore server (distributori).");
@@ -184,14 +221,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ------------------ SYNC MONITOR (bulk) ------------------
-
     async function syncMonitorNow() {
         try {
             const res = await fetch("/api/monitor/sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: "" // nessun parametro: il server legge dal DB principale
+                body: ""
             });
 
             const txt = await res.text();
@@ -212,14 +247,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadDistributors();
             applyFilter();
-
         } catch (err) {
             console.error(err);
             showAlert("Errore sync monitor: " + err.message);
         }
     }
 
-    // bind bottone sync
     const btnSync = document.getElementById("btn-sync-monitor");
     if (btnSync) {
         btnSync.addEventListener("click", async () => {
@@ -227,8 +260,6 @@ document.addEventListener("DOMContentLoaded", () => {
             await syncMonitorNow();
         });
     }
-
-    // ------------------ SEARCH ------------------
 
     btnSearch.addEventListener("click", () => applyFilter());
 
@@ -243,8 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
             applyFilter();
         }
     });
-
-    // ------------------ MODAL API (global) ------------------
 
     window.openModal = function (distId) {
         modalDistId.textContent = distId;
@@ -267,14 +296,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadDistributors();
             applyFilter();
-
         } catch (err) {
             console.error(err);
             showAlert("Errore aggiornamento stato: " + err.message);
         }
     };
-
-    // ------------------ INIT ------------------
 
     loadMaintainers();
     loadDistributors().then(() => applyFilter());
