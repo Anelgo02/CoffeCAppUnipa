@@ -13,14 +13,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(urlPatterns = {
-        // Maintainers
         "/api/manager/maintainers.xml",
         "/api/manager/maintainers/list",
         "/api/manager/maintainers/create",
         "/api/manager/maintainers/delete",
-        // Distributors
         "/api/manager/distributors/list",
         "/api/manager/distributors/create",
         "/api/manager/distributors/delete",
@@ -66,8 +65,6 @@ public class ManagerServlet extends HttpServlet {
         resp.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
-    // -------------------- MAINTAINERS XML (formato vecchio) --------------------
-
     private void handleMaintainersXml(HttpServletResponse resp) throws IOException {
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
         resp.setContentType("application/xml");
@@ -81,7 +78,7 @@ public class ManagerServlet extends HttpServlet {
             xml.append("<manutentori>\n");
 
             for (var m : list) {
-                String idXml = toXmlMaintainerId(m.maintainerId); // M-001 -> M001
+                String idXml = toXmlMaintainerId(m.maintainerId);
                 xml.append("    <manutentore id=\"").append(escXml(idXml)).append("\">\n");
                 xml.append("        <nome>").append(escXml(m.firstName)).append("</nome>\n");
                 xml.append("        <cognome>").append(escXml(m.lastName)).append("</cognome>\n");
@@ -106,8 +103,6 @@ public class ManagerServlet extends HttpServlet {
         if (username == null) return "";
         return username.replace("-", "").replace(" ", "");
     }
-
-    // -------------------- MAINTAINERS LIST (per tabella) --------------------
 
     private void handleMaintainersList(HttpServletResponse resp) throws IOException {
         try {
@@ -180,10 +175,10 @@ public class ManagerServlet extends HttpServlet {
         }
     }
 
-    // -------------------- DISTRIBUTORS LIST/CRUD --------------------
-
     private void handleDistributorsList(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String qRaw = trim(req.getParameter("q"));
+
+        Map<String, String> monitorStatuses = MonitorClient.fetchRuntimeStatuses();
 
         String base =
                 "SELECT code, location_name, status " +
@@ -243,12 +238,15 @@ public class ManagerServlet extends HttpServlet {
 
                     String code = rs.getString("code");
                     String loc = rs.getString("location_name");
-                    String status = rs.getString("status");
+                    String dbStatus = rs.getString("status");
+
+                    String runtime = monitorStatuses.get(code);
+                    String ui = mergedDbToUi(dbStatus, runtime);
 
                     json.append("{")
                             .append("\"id\":\"").append(escJson(code)).append("\",")
                             .append("\"luogo\":\"").append(escJson(loc)).append("\",")
-                            .append("\"stato\":\"").append(escJson(dbStatusToUi(status))).append("\"")
+                            .append("\"stato\":\"").append(escJson(ui)).append("\"")
                             .append("}");
                 }
 
@@ -260,6 +258,20 @@ public class ManagerServlet extends HttpServlet {
             e.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
         }
+    }
+
+    private String mergedDbToUi(String dbStatus, String monitorStatusDb) {
+        String db = (dbStatus == null) ? "" : dbStatus.trim().toUpperCase();
+        String mon = (monitorStatusDb == null) ? "" : monitorStatusDb.trim().toUpperCase();
+
+        if ("MAINTENANCE".equals(db)) return "MANUTENZIONE";
+        if ("FAULT".equals(mon) && !"MAINTENANCE".equals(db)) return "GUASTO";
+
+        if ("ACTIVE".equals(db)) return "ATTIVO";
+        if ("FAULT".equals(db)) return "GUASTO";
+        if ("MAINTENANCE".equals(db)) return "MANUTENZIONE";
+
+        return "DISATTIVO";
     }
 
     private void handleCreateDistributor(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -280,11 +292,8 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
-
             MonitorClient.upsertDistributor(id, loc, statusEnum);
-
             writeJson(resp, 201, "{\"ok\":true,\"distributorId\":" + distId + "}");
-
         } catch (DaoException ex) {
             ex.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
@@ -300,11 +309,8 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             distributorAdminDAO.deleteDistributorByCode(id);
-
             MonitorClient.deleteDistributor(id);
-
             writeJson(resp, 200, "{\"ok\":true}");
-
         } catch (DaoException ex) {
             ex.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
@@ -328,27 +334,13 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             distributorAdminDAO.updateStatusByCode(id, statusEnum);
-
             MonitorClient.updateStatus(id, statusEnum);
-
             writeJson(resp, 200, "{\"ok\":true}");
-
         } catch (DaoException ex) {
             ex.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
         }
     }
-
-    private String dbStatusToUi(String db) {
-        if (db == null) return "DISATTIVO";
-        String s = db.trim().toUpperCase();
-        if ("ACTIVE".equals(s)) return "ATTIVO";
-        if ("MAINTENANCE".equals(s)) return "MANUTENZIONE";
-        if ("FAULT".equals(s)) return "GUASTO";
-        return "DISATTIVO";
-    }
-
-    // -------------------- helpers --------------------
 
     private boolean isManager(HttpServletRequest req) {
         HttpSession s = req.getSession(false);
