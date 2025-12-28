@@ -8,7 +8,7 @@ function getDistributorCode() {
 
 let currentUser = null;
 let messageTimeout = null;
-const MONITOR_BASE_URL = "https://localhost:8081/monitor";
+const MONITOR_BASE_URL = "http://localhost:8081/CoffeeMonitor_war_exploded";
 
 
 
@@ -264,7 +264,7 @@ async function sendHeartbeat() {
     if (!code) return;
 
     try {
-        await fetch(`${MONITOR_BASE_URL}/heartbeat`, {
+        await fetch(`${MONITOR_BASE_URL}/api/monitor/heartbeat`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({ code }),

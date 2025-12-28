@@ -4,6 +4,7 @@ import com.example.coffecappunipa.persistence.dao.DistributorAdminDAO;
 import com.example.coffecappunipa.persistence.dao.MaintainerDAO;
 import com.example.coffecappunipa.persistence.util.DaoException;
 import com.example.coffecappunipa.persistence.util.DbConnectionManager;
+import com.example.coffecappunipa.web.monitor.MonitorClient;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -191,17 +192,12 @@ public class ManagerServlet extends HttpServlet {
 
         boolean hasQ = !isBlank(qRaw);
 
-        // Normalizzo q per capire se sta cercando uno “stato UI”
         String qNorm = hasQ ? qRaw.trim().toUpperCase() : null;
 
-        // Se q è uno stato UI, lo trasformo nel valore DB da cercare in status
-        // (E- anche se l'utente scrive ACTIVE/MAINTENANCE/FAULT, lo accetto ugualmente)
         String qAsDbStatus = null;
         if (hasQ) {
-            // prova a mappare UI -> DB
             qAsDbStatus = DistributorAdminDAO.uiStatusToDbEnum(qNorm);
 
-            // se non è una UI status, ma è già un DB status valido, lo uso comunque
             if (qAsDbStatus == null) {
                 if ("ACTIVE".equals(qNorm) || "MAINTENANCE".equals(qNorm) || "FAULT".equals(qNorm)) {
                     qAsDbStatus = qNorm;
@@ -209,9 +205,6 @@ public class ManagerServlet extends HttpServlet {
             }
         }
 
-        // Query: se c'è q, filtro su code/loc come prima.
-        // Per status: se q è uno stato, filtro ESATTAMENTE quel valore DB (più robusto del LIKE).
-        // Altrimenti uso LIKE anche su status per ricerche “libere”.
         String where = "";
         if (hasQ) {
             if (qAsDbStatus != null) {
@@ -232,9 +225,9 @@ public class ManagerServlet extends HttpServlet {
                 ps.setString(2, like);
 
                 if (qAsDbStatus != null) {
-                    ps.setString(3, qAsDbStatus);         // status = 'ACTIVE' ecc.
+                    ps.setString(3, qAsDbStatus);
                 } else {
-                    ps.setString(3, "%" + qNorm + "%");   // status LIKE '%...%'
+                    ps.setString(3, "%" + qNorm + "%");
                 }
             }
 
@@ -268,7 +261,6 @@ public class ManagerServlet extends HttpServlet {
         }
     }
 
-
     private void handleCreateDistributor(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = trim(req.getParameter("id")); // d-id
         String loc = trim(req.getParameter("locazione")); // d-loc
@@ -287,6 +279,10 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
+
+            // BEST-EFFORT: crea/aggiorna anche sul monitor (DB separato)
+            MonitorClient.upsertDistributor(id, loc, statusEnum);
+
             writeJson(resp, 201, "{\"ok\":true,\"distributorId\":" + distId + "}");
 
         } catch (DaoException ex) {
@@ -304,6 +300,10 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             distributorAdminDAO.deleteDistributorByCode(id);
+
+            // BEST-EFFORT: rimuovi anche dal monitor
+            MonitorClient.deleteDistributor(id);
+
             writeJson(resp, 200, "{\"ok\":true}");
 
         } catch (DaoException ex) {
@@ -329,6 +329,10 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             distributorAdminDAO.updateStatusByCode(id, statusEnum);
+
+            // BEST-EFFORT: aggiorna anche il monitor
+            MonitorClient.updateStatus(id, statusEnum);
+
             writeJson(resp, 200, "{\"ok\":true}");
 
         } catch (DaoException ex) {
@@ -363,13 +367,8 @@ public class ManagerServlet extends HttpServlet {
         resp.getWriter().write(payload);
     }
 
-    private String trim(String s) {
-        return s == null ? null : s.trim();
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.trim().isEmpty();
-    }
+    private String trim(String s) { return s == null ? null : s.trim(); }
+    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 
     private String escXml(String s) {
         if (s == null) return "";

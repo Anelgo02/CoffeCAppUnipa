@@ -2,6 +2,7 @@ package com.example.coffecappunipa.web.servlet;
 
 import com.example.coffecappunipa.persistence.dao.DistributorDAO;
 import com.example.coffecappunipa.persistence.util.DaoException;
+import com.example.coffecappunipa.web.monitor.MonitorClient;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -34,14 +35,8 @@ public class MaintainerDistributorsServlet extends HttpServlet {
 
         String uri = req.getRequestURI();
 
-        if (uri.endsWith("/refill")) {
-            handleRefill(req, resp);
-            return;
-        }
-        if (uri.endsWith("/status")) {
-            handleStatus(req, resp);
-            return;
-        }
+        if (uri.endsWith("/refill")) { handleRefill(req, resp); return; }
+        if (uri.endsWith("/status")) { handleStatus(req, resp); return; }
 
         resp.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
@@ -54,7 +49,6 @@ public class MaintainerDistributorsServlet extends HttpServlet {
             return;
         }
 
-        // Valori “full”: se l’assignment impone numeri precisi, li cambiamo qui.
         int coffee = 2000;
         int milk = 5;
         int sugar = 2000;
@@ -64,7 +58,6 @@ public class MaintainerDistributorsServlet extends HttpServlet {
             distributorDAO.refillSuppliesByCode(code.trim(), coffee, milk, sugar, cups);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("{\"ok\":true}");
-
         } catch (DaoException ex) {
             ex.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -91,6 +84,10 @@ public class MaintainerDistributorsServlet extends HttpServlet {
 
         try {
             distributorDAO.updateStatusByCode(code.trim(), dbStatus);
+
+            // BEST-EFFORT: aggiorna anche il monitor (no auth)
+            MonitorClient.updateStatus(code.trim(), dbStatus);
+
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("{\"ok\":true}");
 
@@ -101,10 +98,6 @@ public class MaintainerDistributorsServlet extends HttpServlet {
         }
     }
 
-    /**
-     * XML: attivo/manutenzione/disattivo
-     * DB: ACTIVE/MAINTENANCE/FAULT (disattivo -> FAULT)
-     */
     private String toDbStatus(String xmlStatus) {
         return switch (xmlStatus) {
             case "attivo" -> "ACTIVE";
@@ -121,7 +114,5 @@ public class MaintainerDistributorsServlet extends HttpServlet {
         return role != null && "MAINTAINER".equalsIgnoreCase(role.toString());
     }
 
-    private boolean isBlank(String s) {
-        return s == null || s.trim().isEmpty();
-    }
+    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 }
