@@ -1,79 +1,179 @@
-# Guida al Test - Prototipo Frontend (Assignment 2)
+# Coffee Capp UniPA – Progetto Principale
 
-## 1. Panoramica dell'Architettura
-Questo progetto rappresenta il **Modulo Frontend** del sistema "Coffee Capp UniPA".
-Attualmente, il sistema opera in modalità **"Frontend-Only Simulation"**:
-* Non vi è ancora persistenza su Database relazionale.
-* Le operazioni di lettura iniziale sono gestite tramite **Fetch API** su file statici (JSON/XML).
-* **Persistenza Simulata:** Le operazioni di scrittura (aggiunta/rimozione/modifica) vengono salvate nel **LocalStorage** del browser. Questo garantisce che i dati rimangano consistenti tra le diverse pagine e al ricaricamento della pagina, simulando un vero database.
-* **Inizializzazione Dati:** Al primo avvio, l'applicazione popola il LocalStorage leggendo i file statici (`.xml`). Per reinizializzare l'ambiente e tornare ai dati originali, è possibile eseguire il comando `localStorage.clear()` nella **Console del browser (F12)** e ricaricare la pagina.
----
+Questo repository contiene il **progetto principale** del sistema *Coffee Capp UniPA*.
+Il progetto implementa il **backend applicativo centrale** e il **frontend web** per la gestione di una rete di distributori automatici di bevande, con supporto a più ruoli, persistenza su database e integrazione con un servizio di monitoraggio esterno.
 
-## 2. Istruzioni per l'Esecuzione
-1.  Avviare l'applicazione Spring Boot (`CoffeeCappApplication.java`).
-2.  Il server risponderà all'indirizzo `http://localhost:8080`.
-3.  Tutte le risorse statiche sono servite dalla cartella `src/main/resources/static`.
-4.  
+Il focus di questo progetto è:
+- gestione utenti e ruoli
+- gestione distributori e scorte
+- simulazione utilizzo del distributore
+- coordinamento applicativo e logica di business
 
 ---
 
-## 3. Scenari di Test
+## 1. Struttura Generale del Progetto
 
-### A. Schermo Distributore (Simulazione IoT)
-**Pagina:** `http://localhost:8080/distributore/index.html`
+Il progetto è strutturato come una **web application Jakarta EE** basata su Servlet, con risorse statiche HTML/JS/CSS.
 
-* **Funzionamento:** La pagina esegue un **Polling** ogni 5 secondi sul file `static/data/connected_user.json`.
-* **Test Connessione Utente:**
-    1.  Aprire il file `connected_user.json` nell'IDE.
-    2.  Impostare `"connected": true`. Entro 5 secondi, lo schermo mostrerà "Marco Rossi" e il credito.
-    3.  Impostare `"connected": false`. Lo schermo mostrerà "Nessun utente".
-* **Test Acquisto e Persistenza:**
-    1.  Selezionare una bevanda e cliccare **"Eroga"**.
-    2.  Il credito visualizzato diminuirà.
-    3.  **Nota Tecnica:** Il nuovo credito viene salvato nel `localStorage` del browser. Anche se il file JSON originale contiene ancora il credito vecchio, il frontend darà priorità al dato aggiornato localmente.
+Struttura logica principale:
 
-### B. Portale Cliente (Login e Registrazione)
-**Pagina:** `http://localhost:8080/login.html`
-
-> **Nota sull'Implementazione del Login:**
-> Rispetto alla richiesta dell'assignment di *reindirizzare alla pagina principale indipendentemente dai dati inseriti*, in questo progetto è stata implementata una logica di **Routing basata sul Ruolo**.
-> Avendo optato per una **Single Login Page** (unica pagina di accesso per Clienti, Gestori e Manutentori), è necessario validare le credenziali (sul mock database `users.json` o `localStorage`) per determinare la corretta dashboard di destinazione. Un reindirizzamento incondizionato non avrebbe permesso di distinguere tra le tre tipologie di utente.
-
-* **Credenziali di Test:**
-    * **Cliente:** `cliente@unipa.it` / `password123` → Reindirizza a Dashboard Cliente.
-    * **Gestore:** `gestore@unipa.it` / `password123` → Reindirizza a Pannello Gestore.
-    * **Manutentore:** `manutentore@unipa.it` / `password123` → Reindirizza a Pannello Manutenzione.
-* **Test Registrazione (Flusso):**
-    * Dalla pagina di login, cliccare su "Registrati qui".
-    * Compilare il form con nuovi dati.
-    * **Comportamento Atteso:** Poiché la logica è gestita interamente lato client, al click su "Registrati" il sistema salva l'utente nel `localStorage` ed esegue un **reindirizzamento immediato** alla Dashboard Cliente (Auto-Login).
-    * *Verifica:* Una volta nella dashboard, effettuare il logout e provare ad accedere con le nuove credenziali appena create: il login avrà successo grazie alla persistenza locale.
-* **Dashboard Cliente:** Mostra i dati dell'utente loggato e permette la simulazione di Ricarica e Connessione (i dati aggiornati sono mantenuti in sessione browser).
-
-### C. Pannello Gestore (CRUD Completo con LocalStorage)
-**Pagina:** `http://localhost:8080/gestore/index.html`
-
-Questa sezione è stata rifattorizzata per simulare un'applicazione gestionale completa.
-* **Caricamento Dati:** Al primo avvio, i dati vengono letti dai file XML (`manutentori.xml`, `esempio_stato.xml`). Successivamente, vengono letti dal `localStorage` per mantenere le modifiche.
-* **Gestione Manutentori:**
-    * Visualizzazione tabellare con opzione "Elimina".
-    * **Aggiunta:** Cliccando su "+ Nuovo Manutentore" si viene reindirizzati a una pagina dedicata (`aggiungi_manutentore.html`). Dopo il salvataggio, si ritorna automaticamente alla lista aggiornata.
-* **Gestione Distributori:**
-    * Visualizzazione tabellare con stato colorato (Verde/Giallo/Rosso).
-    * **Aggiunta:** Cliccando su "+ Nuovo Distributore" si accede alla pagina di inserimento dedicata (`aggiungi_distributore.html`).
-    * **Modifica Stato (Popup):** Cliccando sul tasto "Stato" nella tabella, si apre un **Modal (Popup)** che permette di cambiare lo stato in *ATTIVO, MANUTENZIONE* o *DISATTIVO*. La modifica è immediata e persistente.
-
-### D. Pannello Manutenzione (Lettura XML)
-**Pagina:** `http://localhost:8080/manutenzione/index.html`
-
-* Permette di visualizzare lo stato tecnico dettagliato di un distributore (livelli, guasti) leggendo il file `esempio_stato.xml`.
-* **Test:** Inserire ID `UNIPA-001` (Stato Attivo) o `UNIPA-002` (Stato Guasto/Manutenzione) per vedere le differenze nel rendering dei dati.
+- `web.servlet` → Servlet HTTP (API backend)
+- `persistence.dao` → Accesso al database (DAO JDBC)
+- `web.monitor` → Client HTTP verso il servizio di monitoraggio
+- `static/` → Frontend (HTML, CSS, JavaScript)
 
 ---
 
-## 4. Struttura Dati (Mock)
-I file utilizzati per la simulazione si trovano in `/static/data/`:
-* `connected_user.json`: Simula la presenza NFC/Bluetooth al distributore.
-* `users.json`: Simula il database utenti per il login.
-* `manutentori.xml`: Elenco iniziale addetti (usato per il primo caricamento).
-* `esempio_stato.xml`: Database stato macchine e guasti (usato per il primo caricamento).
+## 2. Servlet Backend (API)
+
+### 🔹 Autenticazione e Routing
+- **RoutingServlet**
+    - Gestisce login, logout e reindirizzamento in base al ruolo
+    - Imposta il ruolo in sessione
+    - È il punto centrale di controllo degli accessi
+
+---
+
+### 🔹 Customer (Cliente)
+
+- **CustomerConnectServlet**
+    - Connette un cliente a un distributore
+    - Imposta lo stato di connessione lato backend
+
+- **CustomerDisconnectServlet**
+    - Disconnette il cliente dal distributore
+
+- **CustomerDashboardServlet**
+    - Fornisce i dati del cliente loggato (username, credito)
+
+---
+
+### 🔹 Distributor (Simulazione Distributore)
+
+- **DistributorPollServlet**
+    - Endpoint di polling usato dallo schermo del distributore
+    - Verifica se un cliente è connesso
+    - Restituisce username e credito
+
+- **DistributorBeveragesServlet**
+    - Restituisce la lista delle bevande disponibili
+
+- **DistributorPurchaseServlet**
+    - Gestisce l’erogazione della bevanda
+    - Scala il credito
+    - Aggiorna le scorte
+
+---
+
+### 🔹 Manager (Gestore)
+
+- **ManagerDistributorsServlet**
+    - Lista distributori
+    - Creazione distributori
+    - Eliminazione distributori
+    - Cambio stato (attivo / manutenzione / disattivo)
+
+- **ManagerMaintainersServlet**
+    - Lista manutentori
+    - Creazione manutentori
+    - Eliminazione manutentori
+
+- **MonitorSyncServlet**
+    - Sincronizza tutti i distributori presenti nel DB principale
+    - Legge i dati **direttamente dal database**
+    - Espone un endpoint invocabile dal pannello Manager
+
+---
+
+### 🔹 Maintainer (Manutentore)
+
+- **MaintainerDistributorsServlet**
+    - Rifornimento scorte dei distributori
+    - Cambio stato distributori
+    - Operazioni tecniche
+    - Aggiorna automaticamente anche il servizio di monitoraggio
+
+---
+
+## 3. DAO e Persistenza
+
+Tutta la persistenza è gestita tramite **DAO JDBC**, senza ORM.
+
+Principali DAO:
+- `UserDAO`
+- `DistributorDAO`
+- `BeverageDAO`
+- `ManagerReadDAO`
+
+Ogni DAO:
+- apre connessioni JDBC esplicite
+- esegue query SQL dirette
+- solleva `DaoException` in caso di errore
+
+---
+
+## 4. Frontend – Risorse Statiche
+
+Le risorse frontend si trovano in `src/main/resources/static`.
+
+### 🔹 JavaScript principali
+
+- **apiHelpers.js**
+    - Wrapper per `fetch`
+    - Gestione errori
+    - Uniforma chiamate GET / POST
+
+- **manager.main.js**
+    - Pannello Gestore
+    - Caricamento distributori
+    - Filtri e ricerca
+    - Modal cambio stato
+    - Avvio sincronizzazione monitor
+
+- **distributor.poll.js**
+    - Simulazione schermo distributore
+    - Polling stato cliente
+    - Acquisto bevande
+    - Invio heartbeat periodico
+
+---
+
+### 🔹 HTML principali
+
+- `login.html`
+- `gestore/index.html`
+- `manutenzione/index.html`
+- `distributore/index.html`
+- `cliente/index.html`
+
+Ogni pagina:
+- usa fetch verso le servlet backend
+- non contiene logica applicativa critica
+- delega tutto al backend
+
+---
+
+## 5. Gestione Ruoli e Sessioni
+
+Il progetto utilizza:
+- sessione HTTP standard
+- attributo `SESSION_ROLE`
+- controllo ruolo **in ogni servlet**
+
+Nessun endpoint critico è accessibile senza ruolo corretto.
+
+---
+
+## 6. Sincronizzazione Stato Distributori
+
+Quando:
+- un distributore viene creato
+- viene eliminato
+- cambia stato
+- viene rifornito
+
+Il backend principale:
+- aggiorna il proprio database
+- invia **best-effort** l’aggiornamento al servizio di monitoraggio
+
+In aggiunta, è disponibile una **sincronizzazione completa manuale** tramite servlet dedicata.

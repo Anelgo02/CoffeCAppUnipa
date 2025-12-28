@@ -255,10 +255,7 @@ async function disconnectFromDistributor() {
     }
 }
 
-/**
- * HEARTBEAT ogni 60s verso la mini-app di monitoraggio (che faremo dopo).
- * Per ora: se fallisce, ignoriamo.
- */
+
 async function sendHeartbeat() {
     const code = getDistributorCode();
     if (!code) return;

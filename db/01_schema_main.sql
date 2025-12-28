@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
                                      id            BIGINT AUTO_INCREMENT PRIMARY KEY,
                                      username      VARCHAR(50)  NOT NULL UNIQUE,
     email         VARCHAR(120) NULL,
-    password_hash VARCHAR(255) NULL,  -- per ora puoi lasciarlo NULL (login non autenticato)
+    password_hash VARCHAR(255) NULL,  -- per ora NULL (login non autenticato)
     role          ENUM('CUSTOMER','MAINTAINER','MANAGER') NOT NULL,
     credit        DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -133,7 +133,7 @@ FROM users u
 WHERE u.username = 'maint1'
     ON DUPLICATE KEY UPDATE first_name = VALUES(first_name), last_name = VALUES(last_name), phone = VALUES(phone);
 
--- Distributori demo (usa code coerente con UI: es. UNIPA-001)
+-- Distributori demo
 INSERT INTO distributors(code, location_name, status) VALUES
                                                           ('UNIPA-001','Edificio 1', 'ACTIVE'),
                                                           ('UNIPA-002','Edificio 2', 'MAINTENANCE')

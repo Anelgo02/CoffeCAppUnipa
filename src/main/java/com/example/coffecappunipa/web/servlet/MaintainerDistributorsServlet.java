@@ -42,13 +42,14 @@ public class MaintainerDistributorsServlet extends HttpServlet {
     }
 
     private void handleRefill(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = req.getParameter("code");
+        String code = firstNonBlank(req.getParameter("code"), req.getParameter("id"));
         if (isBlank(code)) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("{\"ok\":false,\"message\":\"code obbligatorio\"}");
             return;
         }
 
+        //valori full del distributore
         int coffee = 2000;
         int milk = 5;
         int sugar = 2000;
@@ -58,6 +59,7 @@ public class MaintainerDistributorsServlet extends HttpServlet {
             distributorDAO.refillSuppliesByCode(code.trim(), coffee, milk, sugar, cups);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("{\"ok\":true}");
+
         } catch (DaoException ex) {
             ex.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -66,16 +68,16 @@ public class MaintainerDistributorsServlet extends HttpServlet {
     }
 
     private void handleStatus(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = req.getParameter("code");
-        String statusXml = req.getParameter("status"); // attivo/manutenzione/disattivo
+        String code = firstNonBlank(req.getParameter("code"), req.getParameter("id"));
+        String statusIn = firstNonBlank(req.getParameter("status"), req.getParameter("stato"));
 
-        if (isBlank(code) || isBlank(statusXml)) {
+        if (isBlank(code) || isBlank(statusIn)) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("{\"ok\":false,\"message\":\"code e status obbligatori\"}");
             return;
         }
 
-        String dbStatus = toDbStatus(statusXml.trim().toLowerCase());
+        String dbStatus = toDbStatus(statusIn);
         if (dbStatus == null) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("{\"ok\":false,\"message\":\"status non valido\"}");
@@ -85,7 +87,7 @@ public class MaintainerDistributorsServlet extends HttpServlet {
         try {
             distributorDAO.updateStatusByCode(code.trim(), dbStatus);
 
-            // BEST-EFFORT: aggiorna anche il monitor (no auth)
+            // BEST-EFFORT: aggiorna anche il monitor (servizio senza auth)
             MonitorClient.updateStatus(code.trim(), dbStatus);
 
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -98,13 +100,32 @@ public class MaintainerDistributorsServlet extends HttpServlet {
         }
     }
 
-    private String toDbStatus(String xmlStatus) {
-        return switch (xmlStatus) {
-            case "attivo" -> "ACTIVE";
-            case "manutenzione" -> "MAINTENANCE";
-            case "disattivo" -> "FAULT";
-            default -> null;
-        };
+    /**
+     * Supporta:
+     * - "attivo" / "manutenzione" / "disattivo"
+     * - "ATTIVO" / "MANUTENZIONE" / "DISATTIVO"
+     * - "ACTIVE" / "MAINTENANCE" / "FAULT"
+     */
+    private String toDbStatus(String s) {
+        if (s == null) return null;
+        String x = s.trim().toUpperCase();
+
+        // UI IT
+        if ("ATTIVO".equals(x)) return "ACTIVE";
+        if ("MANUTENZIONE".equals(x) || "IN MANUTENZIONE".equals(x)) return "MAINTENANCE";
+        if ("DISATTIVO".equals(x)) return "FAULT";
+
+        // XML/lower (già upper)
+        if ("ATTIVO".equals(x)) return "ACTIVE";
+        if ("MANUTENZIONE".equals(x)) return "MAINTENANCE";
+        if ("DISATTIVO".equals(x)) return "FAULT";
+
+        // DB tokens
+        if ("ACTIVE".equals(x)) return "ACTIVE";
+        if ("MAINTENANCE".equals(x)) return "MAINTENANCE";
+        if ("FAULT".equals(x)) return "FAULT";
+
+        return null;
     }
 
     private boolean isMaintainer(HttpServletRequest req) {
@@ -114,5 +135,13 @@ public class MaintainerDistributorsServlet extends HttpServlet {
         return role != null && "MAINTAINER".equalsIgnoreCase(role.toString());
     }
 
-    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
+    private String firstNonBlank(String a, String b) {
+        if (!isBlank(a)) return a;
+        if (!isBlank(b)) return b;
+        return null;
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
 }
