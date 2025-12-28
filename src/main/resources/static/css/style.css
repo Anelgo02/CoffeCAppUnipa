@@ -496,6 +496,84 @@ ul{
     display: none !important;
 }
 
+/* --- AGGIUNTE E MODIFICHE --- */
+
+/* 1. Variante del bottone che si adatta al contenuto (non full-width) */
+.btn-inline {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    margin: 0; /* Rimuove margin default se presenti */
+}
+
+/* 2. Variante per pulsanti di pericolo (es. Logout) */
+.btn-danger {
+    background-color: var(--danger);
+    color: var(--colore-bianco);
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+/* 3. Contenitore per le intestazioni delle sezioni (Titolo a sx, Bottoni a dx) */
+.section-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--colore-secondario); /* Spostato qui dal h3 */
+}
+
+.section-toolbar h2 {
+    margin: 0; /* Rimuove margini extra per allineamento */
+    color: var(--colore-primario);
+}
+
+/* Raggruppamento bottoni a destra */
+.section-actions {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+/* 4. Miglioramento barra di ricerca */
+.search-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.search-toolbar label {
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.search-toolbar input {
+    width: auto;
+    margin-bottom: 0; /* Reset del margine input standard */
+    padding: 0.5rem;
+}
+
+/* Rimuovi il bordo inferiore dai vecchi h3/h2 dentro box-sezione se usi section-toolbar */
+.box-sezione h3,
+.box-sezione h2 {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
 /* =========================================
    MEDIA QUERIES (Responsive Design)
    ========================================= */

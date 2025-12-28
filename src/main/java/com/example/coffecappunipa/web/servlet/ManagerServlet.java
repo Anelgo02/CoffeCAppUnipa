@@ -293,6 +293,7 @@ public class ManagerServlet extends HttpServlet {
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
             MonitorClient.upsertDistributor(id, loc, statusEnum);
+            MonitorClient.heartbeat(id);
             writeJson(resp, 201, "{\"ok\":true,\"distributorId\":" + distId + "}");
         } catch (DaoException ex) {
             ex.printStackTrace();

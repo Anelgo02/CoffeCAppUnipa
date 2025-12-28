@@ -7,27 +7,29 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+
 <header>
     <h1>Pannello Gestione Sistema</h1>
-    <a href="/route/logout" id="btn-logout" style="font-size: 0.8rem; padding: 0.5rem;">Esci</a>
+    <a href="/route/logout" id="btn-logout" class="btn btn-inline btn-danger">Esci</a>
 </header>
 
 <main>
     <section class="box-sezione" id="gestione-distributori">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+
+        <div class="section-toolbar">
             <h2>Stato distributori</h2>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <a href="aggiungi_distributore.html" class="btn" style="width:auto; background-color: var(--colore-primario);">+ Nuovo Distributore</a>
-                <button class="toggle-btn btn" id="btn-sync-monitor">Sincronizza Monitor</button>
+            <div class="section-actions">
+                <a href="aggiungi_distributore.html" class="btn btn-inline">+ Nuovo Distributore</a>
+                <button class="btn btn-inline" id="btn-sync-monitor">Sincronizza Monitor</button>
             </div>
         </div>
 
-        <div style="margin-bottom: 1rem;">
-            <label>Ricerca(ID, Stato, Locazione):
-                <input id="search-id" style="width:auto; display:inline-block;">
-            </label>
-            <button class="toggle-btn btn" id="btn-search">Cerca</button>
-            <button class="toggle-btn btn" id="btn-all">Mostra tutti</button>
+        <div class="search-toolbar">
+            <label for="search-id">Ricerca:</label>
+            <input type="text" id="search-id" placeholder="ID, Stato o Locazione">
+
+            <button class="btn btn-inline" id="btn-search">Cerca</button>
+            <button class="btn btn-inline btn-secondario" id="btn-all">Mostra tutti</button>
         </div>
 
         <div class="table-responsive">
@@ -46,9 +48,12 @@
     </section>
 
     <section class="box-sezione" id="gestione-addetti">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+
+        <div class="section-toolbar">
             <h2>Manutentori</h2>
-            <a href="aggiungi_manutentore.html" class="btn" style="width:auto; background-color: var(--colore-primario);">+ Nuovo Manutentore</a>
+            <div class="section-actions">
+                <a href="aggiungi_manutentore.html" class="btn btn-inline">+ Nuovo Manutentore</a>
+            </div>
         </div>
 
         <div class="table-responsive">
