@@ -4,6 +4,7 @@ import com.example.coffecappunipa.persistence.dao.ConnectionDAO;
 import com.example.coffecappunipa.persistence.dao.DistributorDAO;
 import com.example.coffecappunipa.persistence.dao.UserDAO;
 import com.example.coffecappunipa.persistence.util.DaoException;
+import com.example.coffecappunipa.web.monitor.MonitorClient;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @WebServlet(urlPatterns = {
         "/api/customer/connect",
@@ -81,6 +83,50 @@ public class CustomerConnectionServlet extends HttpServlet {
                 return;
             }
 
+            // -----------------------------
+            // BLOCCO ACCESSO: stato effettivo
+            // Regole:
+            // 1) MAINTENANCE (DB principale) => blocca sempre
+            // 2) FAULT runtime (monitor) => blocca
+            // 3) FAULT nel DB principale => blocca (opzionale ma consigliato)
+            // -----------------------------
+
+            String dbStatus = safeUpper(distributorDAO.findStatusByCode(code)); // ACTIVE/MAINTENANCE/FAULT
+
+            if ("MAINTENANCE".equals(dbStatus)) {
+                resp.setStatus(409);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"distributore in manutenzione\"}");
+                return;
+            }
+
+            // Se nel DB principale è già FAULT, blocca.
+            if ("FAULT".equals(dbStatus)) {
+                resp.setStatus(409);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"distributore guasto\"}");
+                return;
+            }
+
+            // Runtime status dal monitor (best-effort)
+            String runtimeStatus = "";
+            try {
+                Map<String, String> runtime = MonitorClient.fetchRuntimeStatuses(); // code -> ACTIVE/MAINTENANCE/FAULT
+                runtimeStatus = safeUpper(runtime.get(code));
+            } catch (Exception ignored) {
+                // se il monitor è giù, non blocco "a caso"
+                runtimeStatus = "";
+            }
+
+            if ("FAULT".equals(runtimeStatus)) {
+                resp.setStatus(409);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"distributore guasto (heartbeat assente)\"}");
+                return;
+            }
+
+            // (Se vuoi: se runtime dice MAINTENANCE, puoi bloccare anche qui.
+            // Di norma però la manutenzione "fonte di verità" è il DB principale.)
+            // if ("MAINTENANCE".equals(runtimeStatus)) { ... }
+
+            // Ok, può connettersi
             connectionDAO.connect(userOpt.get().getId(), distributorId);
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("{\"ok\":true}");
@@ -143,10 +189,11 @@ public class CustomerConnectionServlet extends HttpServlet {
             String distCode = connectionDAO.findActiveDistributorCodeByCustomerId(userOpt.get().getId());
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            if (distId == null || distCode.isEmpty()) {
+            if (distId == null || distCode == null || distCode.isEmpty()) {
                 resp.getWriter().write("{\"ok\":true,\"connected\":false}");
             } else {
-                resp.getWriter().write("{\"ok\":true,\"connected\":true,\"distributorId\":" + distId + ",\"distributorCode\":\""+ escape(distCode) + "\"}");
+                resp.getWriter().write("{\"ok\":true,\"connected\":true,\"distributorId\":" + distId +
+                        ",\"distributorCode\":\"" + escape(distCode) + "\"}");
             }
 
         } catch (DaoException ex) {
@@ -176,5 +223,9 @@ public class CustomerConnectionServlet extends HttpServlet {
     private String escape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private String safeUpper(String s) {
+        return s == null ? "" : s.trim().toUpperCase();
     }
 }

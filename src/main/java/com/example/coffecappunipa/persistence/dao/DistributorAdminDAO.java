@@ -90,7 +90,7 @@ public class DistributorAdminDAO {
         // UI: ATTIVO / IN MANUTENZIONE / DISATTIVO
         if (s.equals("ATTIVO")) return "ACTIVE";
         if (s.equals("MANUTENZIONE") || s.equals("IN MANUTENZIONE")) return "MAINTENANCE";
-        if (s.equals("DISATTIVO")) return "FAULT"; // nel tuo enum non c’è DISABLED, uso FAULT come “non operativo”
+        if (s.equals("DISATTIVO")  || "FAULT".equals(s) || "GUASTO".equals(s)) return "FAULT"; // nel tuo enum non c’è DISABLED, uso FAULT come “non operativo”
         return null;
     }
 }

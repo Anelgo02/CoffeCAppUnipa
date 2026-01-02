@@ -10,6 +10,25 @@ import java.util.*;
 
 public class DistributorDAO {
 
+    public String findStatusByCode(String code) {
+        String sql = "SELECT status FROM distributors WHERE code = ?";
+
+        try (Connection conn = DbConnectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, code);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return rs.getString("status");
+            }
+
+        } catch (SQLException e) {
+            throw new DaoException("Errore DistributorDAO.findStatusByCode()", e);
+        }
+    }
+
+
     public Long findIdByCode(String code) {
         String sql = "SELECT id FROM distributors WHERE code = ?";
 

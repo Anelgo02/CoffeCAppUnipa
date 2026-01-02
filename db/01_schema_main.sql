@@ -1,3 +1,27 @@
+-- ============================================================
+-- 0) UTENTE DB DEDICATO AL PROGETTO (consigliato)
+--    Esegui come root o utente con privilegi (una sola volta)
+-- ============================================================
+
+-- Crea il DB se non esiste (opzionale ma utile)
+CREATE DATABASE IF NOT EXISTS coffe_app
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+-- Utente applicativo (solo per coffe_app)
+DROP USER IF EXISTS 'coffe_app_user'@'localhost';
+CREATE USER 'coffe_app_user'@'localhost' IDENTIFIED BY 'CoffeeApp2026!';
+
+-- Permessi minimi necessari all'app (CRUD + indici)
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+      ON coffe_app.* TO 'coffe_app_user'@'localhost';
+
+FLUSH PRIVILEGES;
+
+-- ============================================================
+-- 1) SCHEMA PRINCIPALE
+-- ============================================================
+
 USE coffe_app;
 
 -- 1) Utenti (tutti i ruoli)
