@@ -61,7 +61,6 @@ public class DistributorScreenServlet extends HttpServlet {
             }
 
             var c = opt.get();
-            // credit come numero
             String json = "{"
                     + "\"ok\":true,"
                     + "\"connected\":true,"
@@ -133,33 +132,41 @@ public class DistributorScreenServlet extends HttpServlet {
             catch (Exception ignore) { sugarQty = 0; }
         }
         if (sugarQty < 0) sugarQty = 0;
+        if (sugarQty > 10) sugarQty = 10; // limite per non rompere scorte con input assurdi
 
         try {
-            var bevOpt = beverageDAO.findById(bevId);
-            if (bevOpt.isEmpty()) {
-                resp.setStatus(404);
-                resp.getWriter().write("{\"ok\":false,\"message\":\"bevanda non trovata\"}");
-                return;
-            }
-
-            var bev = bevOpt.get();
-            var newCredit = screenDAO.performPurchase(code, bevId, sugarQty, bev.price);
+            // NB: prezzo e validazione bevanda avvengono nel DAO in transazione
+            var newCredit = screenDAO.performPurchase(code, bevId, sugarQty);
 
             resp.setStatus(200);
             resp.getWriter().write("{\"ok\":true,\"credit\":" + newCredit.toPlainString() + "}");
 
         } catch (DaoException ex) {
-            // messaggi “funzionali” gestiti qui
-            String msg = ex.getMessage() == null ? "errore" : ex.getMessage().toLowerCase();
+            String err = ex.getMessage();
 
-            if (msg.contains("credito insufficiente")) {
+            if (DistributorScreenDAO.ERR_NO_CUSTOMER_CONNECTED.equals(err)) {
+                resp.setStatus(409);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"nessun cliente connesso\"}");
+                return;
+            }
+            if (DistributorScreenDAO.ERR_INVALID_BEVERAGE.equals(err)) {
+                resp.setStatus(404);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"bevanda non trovata\"}");
+                return;
+            }
+            if (DistributorScreenDAO.ERR_INVALID_PRICE.equals(err)) {
+                resp.setStatus(409);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"prezzo non valido\"}");
+                return;
+            }
+            if (DistributorScreenDAO.ERR_INSUFFICIENT_CREDIT.equals(err)) {
                 resp.setStatus(409);
                 resp.getWriter().write("{\"ok\":false,\"message\":\"credito insufficiente\"}");
                 return;
             }
-            if (msg.contains("nessun cliente connesso")) {
+            if (DistributorScreenDAO.ERR_OUT_OF_STOCK.equals(err)) {
                 resp.setStatus(409);
-                resp.getWriter().write("{\"ok\":false,\"message\":\"nessun cliente connesso\"}");
+                resp.getWriter().write("{\"ok\":false,\"message\":\"scorte insufficienti\"}");
                 return;
             }
 
