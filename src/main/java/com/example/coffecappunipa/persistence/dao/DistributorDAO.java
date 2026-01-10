@@ -1,3 +1,4 @@
+// src/main/java/com/example/coffecappunipa/persistence/dao/DistributorDAO.java
 package com.example.coffecappunipa.persistence.dao;
 
 import com.example.coffecappunipa.model.DistributorState;
@@ -9,6 +10,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class DistributorDAO {
+
+    public static class SyncResult {
+        public int updated;
+        public int missing;
+        public int invalid;
+
+        public SyncResult(int updated, int missing, int invalid) {
+            this.updated = updated;
+            this.missing = missing;
+            this.invalid = invalid;
+        }
+    }
 
     public String findStatusByCode(String code) {
         String sql = "SELECT status FROM distributors WHERE code = ?";
@@ -27,7 +40,6 @@ public class DistributorDAO {
             throw new DaoException("Errore DistributorDAO.findStatusByCode()", e);
         }
     }
-
 
     public Long findIdByCode(String code) {
         String sql = "SELECT id FROM distributors WHERE code = ?";
@@ -160,5 +172,91 @@ public class DistributorDAO {
         } catch (SQLException e) {
             throw new DaoException("Errore DistributorDAO.updateStatusByCode()", e);
         }
+    }
+
+    /**
+     * Applica in batch gli stati provenienti dal servizio Monitor.
+     * - Aggiorna SOLO i distributor già presenti nel DB principale (per code)
+     * - Normalizza status (ACTIVE/MAINTENANCE/FAULT)
+     * - Transazione unica (serio, non “giocattolo”)
+     */
+    public SyncResult applyStatusesFromMonitor(Map<String, String> monitorStatuses) {
+        if (monitorStatuses == null || monitorStatuses.isEmpty()) {
+            return new SyncResult(0, 0, 0);
+        }
+
+        String sql = "UPDATE distributors SET status = ? WHERE code = ?";
+
+        Connection conn = null;
+        int updated = 0;
+        int missing = 0;
+        int invalid = 0;
+
+        try {
+            conn = DbConnectionManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (Map.Entry<String, String> e : monitorStatuses.entrySet()) {
+                    String code = (e.getKey() == null) ? "" : e.getKey().trim();
+                    String stRaw = (e.getValue() == null) ? "" : e.getValue().trim();
+
+                    if (code.isEmpty()) {
+                        invalid++;
+                        continue;
+                    }
+
+                    String dbStatus = normalizeMonitorStatus(stRaw);
+                    if (dbStatus == null) {
+                        invalid++;
+                        continue;
+                    }
+
+                    ps.setString(1, dbStatus);
+                    ps.setString(2, code);
+
+                    int r = ps.executeUpdate();
+                    if (r == 1) updated++;
+                    else missing++;
+                }
+            }
+
+            conn.commit();
+            return new SyncResult(updated, missing, invalid);
+
+        } catch (Exception ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            if (ex instanceof DaoException) throw (DaoException) ex;
+            throw new DaoException("Errore DistributorDAO.applyStatusesFromMonitor()", ex);
+
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
+                try { conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Monitor -> DB principale.
+     * Monitor ti manda: ACTIVE | MAINTENANCE | FAULT
+     * DB principale usa gli stessi token (come hai già fatto).
+     */
+    private String normalizeMonitorStatus(String status) {
+        if (status == null) return null;
+        String s = status.trim().toUpperCase();
+
+        if ("ACTIVE".equals(s)) return "ACTIVE";
+        if ("MAINTENANCE".equals(s)) return "MAINTENANCE";
+        if ("FAULT".equals(s)) return "FAULT";
+
+        // se vuoi essere permissivo:
+        if ("ATTIVO".equals(s)) return "ACTIVE";
+        if ("MANUTENZIONE".equals(s)) return "MAINTENANCE";
+        if ("GUASTO".equals(s)) return "FAULT";
+
+        return null;
     }
 }

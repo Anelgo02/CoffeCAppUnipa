@@ -1,6 +1,8 @@
+// src/main/java/com/example/coffecappunipa/web/servlet/MonitorSyncServlet.java
 package com.example.coffecappunipa.web.servlet;
 
-import com.example.coffecappunipa.persistence.dao.ManagerReadDAO;
+import com.example.coffecappunipa.persistence.dao.DistributorDAO;
+import com.example.coffecappunipa.persistence.util.DaoException;
 import com.example.coffecappunipa.web.monitor.MonitorClient;
 
 import jakarta.servlet.annotation.WebServlet;
@@ -11,12 +13,12 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Map;
 
 @WebServlet(urlPatterns = {"/api/monitor/sync"})
 public class MonitorSyncServlet extends HttpServlet {
 
-    private final ManagerReadDAO managerReadDAO = new ManagerReadDAO();
+    private final DistributorDAO distributorDAO = new DistributorDAO();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -24,38 +26,41 @@ public class MonitorSyncServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setHeader("Cache-Control", "no-store");
 
+        // Autorizzazione (coerente con la tua logica legacy)
         if (!isManagerOrMaintainer(req)) {
             resp.setStatus(403);
             resp.getWriter().write("{\"ok\":false,\"message\":\"ruolo non autorizzato\"}");
             return;
         }
 
-        // recupero dal DB principale: [code, location_name, status]
-        List<String[]> list = managerReadDAO.distributorsList();
+        // 1) PULL dal Monitor
+        Map<String, String> monitorStatuses = MonitorClient.fetchRuntimeStatuses();
 
-        // creo JSON minimo per /api/monitor/sync
-        StringBuilder json = new StringBuilder();
-        json.append("{\"items\":[");
-        for (int i = 0; i < list.size(); i++) {
-            String[] r = list.get(i);
-            String code = r[0];
-            String loc = r[1];
-            String st = r[2]; // già ACTIVE/MAINTENANCE/FAULT
-
-            if (i > 0) json.append(",");
-            json.append("{")
-                    .append("\"code\":\"").append(esc(code)).append("\",")
-                    .append("\"location_name\":\"").append(esc(loc)).append("\",")
-                    .append("\"status\":\"").append(esc(st)).append("\"")
-                    .append("}");
+        if (monitorStatuses == null || monitorStatuses.isEmpty()) {
+            // monitor giù / endpoint errato / JSON non parseabile
+            resp.setStatus(502);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"monitor non raggiungibile o risposta vuota\"}");
+            return;
         }
-        json.append("]}");
 
-        // invio best-effort
-        MonitorClient.syncJson(json.toString());
+        // 2) Apply sul DB principale
+        try {
+            DistributorDAO.SyncResult r = distributorDAO.applyStatusesFromMonitor(monitorStatuses);
 
-        resp.setStatus(200);
-        resp.getWriter().write("{\"ok\":true,\"count\":" + list.size() + "}");
+            resp.setStatus(200);
+            resp.getWriter().write("{"
+                    + "\"ok\":true,"
+                    + "\"received\":" + monitorStatuses.size() + ","
+                    + "\"updated\":" + r.updated + ","
+                    + "\"missing\":" + r.missing + ","
+                    + "\"invalid\":" + r.invalid
+                    + "}");
+
+        } catch (DaoException ex) {
+            ex.printStackTrace();
+            resp.setStatus(500);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"errore DB\"}");
+        }
     }
 
     private boolean isManagerOrMaintainer(HttpServletRequest req) {
@@ -65,10 +70,5 @@ public class MonitorSyncServlet extends HttpServlet {
         if (role == null) return false;
         String r = role.toString().trim().toUpperCase();
         return "MANAGER".equals(r) || "MAINTAINER".equals(r);
-    }
-
-    private String esc(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

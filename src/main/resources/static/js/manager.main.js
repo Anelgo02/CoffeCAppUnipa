@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await apiPostForm("/api/monitor/sync", {}); // CSRF + cookie inclusi
 
             if (data && data.ok) {
-                showAlert(`Sync monitor completata. Distributori sincronizzati: ${data.count ?? 0}`);
+                showAlert(`Sync monitor completata.`);
             } else {
                 showAlert("Sync monitor completata (risposta non standard).");
             }

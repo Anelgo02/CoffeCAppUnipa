@@ -264,7 +264,10 @@ public class ManagerServlet extends HttpServlet {
         String db = (dbStatus == null) ? "" : dbStatus.trim().toUpperCase();
         String mon = (monitorStatusDb == null) ? "" : monitorStatusDb.trim().toUpperCase();
 
+        // DB in MAINTENANCE è “bloccante”: prevale sempre
         if ("MAINTENANCE".equals(db)) return "MANUTENZIONE";
+
+        // Se il monitor dice FAULT, e non sei in manutenzione, mostra GUASTO (runtime > DB)
         if ("FAULT".equals(mon) && !"MAINTENANCE".equals(db)) return "GUASTO";
 
         if ("ACTIVE".equals(db)) return "ATTIVO";
@@ -292,9 +295,17 @@ public class ManagerServlet extends HttpServlet {
 
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
+
+            // Allinea il monitor al DB (best-effort)
             MonitorClient.upsertDistributor(id, loc, statusEnum);
-            MonitorClient.heartbeat(id);
+
+            // 🔥 FIX: heartbeat SOLO se lo stato è ACTIVE
+            if (isActive(statusEnum)) {
+                MonitorClient.heartbeat(id);
+            }
+
             writeJson(resp, 201, "{\"ok\":true,\"distributorId\":" + distId + "}");
+
         } catch (DaoException ex) {
             ex.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
@@ -334,13 +345,27 @@ public class ManagerServlet extends HttpServlet {
         }
 
         try {
+            // 1) DB principale
             distributorAdminDAO.updateStatusByCode(id, statusEnum);
+
+            // 2) Monitor (best-effort): aggiorna lo stato
             MonitorClient.updateStatus(id, statusEnum);
+
+            // 🔥 FIX: se imposto ACTIVE, devo “ravvivare” il runtime del monitor
+            if (isActive(statusEnum)) {
+                MonitorClient.heartbeat(id);
+            }
+
             writeJson(resp, 200, "{\"ok\":true}");
+
         } catch (DaoException ex) {
             ex.printStackTrace();
             writeJson(resp, 500, "{\"ok\":false,\"message\":\"errore DB\"}");
         }
+    }
+
+    private boolean isActive(String statusEnum) {
+        return statusEnum != null && "ACTIVE".equalsIgnoreCase(statusEnum.trim());
     }
 
     private boolean isManager(HttpServletRequest req) {
