@@ -188,26 +188,5 @@ Directory: `src/main/resources/static`
 
 ### 3) Verifica proxy dal progetto principale
 
-* Verifica che il backend principale riesca a comunicare con il monitor:
+* Verificare che il backend principale riesca a comunicare con il monitor:
 * `http://localhost:8080/api/monitor/map`
-
----
-
-## Checklist di test (consigliata)
-
-1. Login customer → `/cliente/index.html` → `GET /api/customer/me` OK
-2. `POST /api/customer/topup` OK (CSRF OK)
-3. Connect/disconnect customer OK
-4. Schermo distributore: pagina pubblica + poll/beverages pubblici OK
-5. `POST /api/distributor/purchase` richiede customer (401/403 se non loggato)
-6. Login manager: lista distributori/manutentori OK, change status OK
-7. Sync monitor: `POST /api/monitor/sync` OK
-8. Login maintainer: refill/status OK
-9. `GET /api/monitor/map` e overlay stati monitor OK
-
----
-
-## Note importanti
-
-* Il frontend non usa template engine (niente Thymeleaf): tutte le pagine sono statiche e la logica passa via AJAX.
-* L’integrazione con CoffeeMonitor è progettata come **best effort**: se CoffeeMonitor è down, le funzionalità principali devono continuare a funzionare.
