@@ -21,9 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Base URL Monitor (WAR separata)
     const MONITOR_BASE_URL = "http://localhost:8081/CoffeMonitor_war_exploded";
 
-    if (btnLogout) {
-        btnLogout.addEventListener("click", () => {});
-    }
+    btnLogout.addEventListener("click", async () => {
+        try {
+            await apiPostForm("/auth/logout", {});
+        } finally {
+            window.location.href = "/login.html";
+        }
+    });
+
 
     function norm(s) {
         return (s ?? "")
@@ -161,16 +166,14 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         } catch (err) {
             console.error(err);
-            showAlert("Sessione non valida o errore server (manutentori).");
-            window.location.href = "/login.html?err=session";
+            showAlert("Errore caricamento: " + (err.message || "operazione fallita"));
+
         }
     }
 
     async function fetchMonitorMap() {
         try {
-            const res = await fetch(`${MONITOR_BASE_URL}/api/monitor/map`, { method: "GET" });
-            if (!res.ok) return null;
-            const data = await res.json();
+            const data = await apiGetJSON("/api/monitor/map"); // stesso host:8080 -> NO CORS
             if (!data || !data.ok || !Array.isArray(data.items)) return null;
 
             const map = new Map();
@@ -183,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return null;
         }
     }
+
 
     function monitorStatusToUi(statusDb) {
         const s = norm(statusDb);
@@ -216,28 +220,14 @@ document.addEventListener("DOMContentLoaded", () => {
             renderDistributors(allDistributors);
         } catch (err) {
             console.error(err);
-            showAlert("Sessione non valida o errore server (distributori).");
-            window.location.href = "/login.html?err=session";
+            showAlert("Errore caricamento: " + (err.message || "operazione fallita"));
+
         }
     }
 
     async function syncMonitorNow() {
         try {
-            const res = await fetch("/api/monitor/sync", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: ""
-            });
-
-            const txt = await res.text();
-            let data = null;
-            try { data = JSON.parse(txt); } catch (_) {}
-
-            if (!res.ok) {
-                const msg = (data && data.message) ? data.message : txt;
-                showAlert("Sync fallita: " + msg);
-                return;
-            }
+            const data = await apiPostForm("/api/monitor/sync", {}); // CSRF + cookie inclusi
 
             if (data && data.ok) {
                 showAlert(`Sync monitor completata. Distributori sincronizzati: ${data.count ?? 0}`);
@@ -252,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
             showAlert("Errore sync monitor: " + err.message);
         }
     }
+
 
     const btnSync = document.getElementById("btn-sync-monitor");
     if (btnSync) {

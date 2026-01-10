@@ -8,6 +8,7 @@ public class User {
     private String email;
     private String role;   // CUSTOMER / MAINTAINER / MANAGER
     private BigDecimal credit;
+    private String password_hash;
 
     public User() {}
 
@@ -25,4 +26,7 @@ public class User {
 
     public BigDecimal getCredit() { return credit; }
     public void setCredit(BigDecimal credit) { this.credit = credit; }
+
+    public String getPasswordHash() { return password_hash; }
+    public void setPasswordHash(String password_hash) { this.password_hash = password_hash; }
 }

@@ -20,13 +20,14 @@ public class UserDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
-                return Optional.of(mapRow(rs));
+                return Optional.of(mapRowBase(rs));
             }
 
         } catch (SQLException e) {
             throw new DaoException("Errore findByUsername()", e);
         }
     }
+
 
     public long createCustomer(String username, String email) {
         String sql = "INSERT INTO users(username, email, role, credit) VALUES(?, ?, 'CUSTOMER', 0.00)";
@@ -93,6 +94,44 @@ public class UserDAO {
         u.setEmail(rs.getString("email"));
         u.setRole(rs.getString("role"));
         u.setCredit(rs.getBigDecimal("credit"));
+        u.setPasswordHash(rs.getString("password_hash"));
         return u;
     }
+
+    public Optional<User> findByUsernameWithPassword(String username) {
+        String sql = "SELECT id, username, email, role, credit, password_hash FROM users WHERE username = ?";
+
+        try (Connection conn = DbConnectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return Optional.empty();
+                return Optional.of(mapRowWithPassword(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new DaoException("Errore findByUsernameWithPassword()", e);
+        }
+    }
+
+
+    private User mapRowBase(ResultSet rs) throws SQLException {
+        User u = new User();
+        u.setId(rs.getLong("id"));
+        u.setUsername(rs.getString("username"));
+        u.setEmail(rs.getString("email"));
+        u.setRole(rs.getString("role"));
+        u.setCredit(rs.getBigDecimal("credit"));
+        return u;
+    }
+
+    private User mapRowWithPassword(ResultSet rs) throws SQLException {
+        User u = mapRowBase(rs);
+        u.setPasswordHash(rs.getString("password_hash"));
+        return u;
+    }
+
+
 }
