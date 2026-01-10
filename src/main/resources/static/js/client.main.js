@@ -19,9 +19,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const rechargeInput = document.getElementById("recharge-amount");
 
     if (btnLogout) {
-        btnLogout.addEventListener("click", () => {
-            window.location.href = "/route/logout";
+        btnLogout.addEventListener("click", async () => {
+            try {
+                await apiPostForm("/auth/logout", {});
+            } finally {
+                window.location.href = "/login.html";
+            }
         });
+
     }
 
     async function loadCustomerMe() {
@@ -81,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error(err);
-            window.location.href = "/login.html?err=session";
+            showAlert("Errore: " + err.message);
         }
     }
 

@@ -7,9 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Base URL Monitor (WAR separata)
     const MONITOR_BASE_URL = "http://localhost:8081/CoffeMonitor_war_exploded";
 
-    btnLogout.addEventListener("click", () => {
-        window.location.href = "/route/logout";
+    btnLogout.addEventListener("click", async () => {
+        try {
+            await apiPostForm("/auth/logout", {});
+        } finally {
+            window.location.href = "/login.html";
+        }
     });
+
 
     btnRefresh.addEventListener("click", () => loadAll());
 
@@ -30,9 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchMonitorMap() {
         try {
-            const res = await fetch(`${MONITOR_BASE_URL}/api/monitor/map`, { method: "GET" });
-            if (!res.ok) return null;
-            const data = await res.json();
+            const data = await apiGetJSON("/api/monitor/map"); // stesso host:8080 -> NO CORS
             if (!data || !data.ok || !Array.isArray(data.items)) return null;
 
             const map = new Map();

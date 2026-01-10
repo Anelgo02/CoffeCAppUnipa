@@ -1,179 +1,192 @@
-# Coffee Capp UniPA – Progetto Principale
+# CoffeeCApp UniPA — Progetto Principale (Backend + Frontend)
 
-Questo repository contiene il **progetto principale** del sistema *Coffee Capp UniPA*.
-Il progetto implementa il **backend applicativo centrale** e il **frontend web** per la gestione di una rete di distributori automatici di bevande, con supporto a più ruoli, persistenza su database e integrazione con un servizio di monitoraggio esterno.
+Questo repository contiene il **progetto principale** del sistema *CoffeeCApp UniPA*.
 
-Il focus di questo progetto è:
-- gestione utenti e ruoli
-- gestione distributori e scorte
-- simulazione utilizzo del distributore
-- coordinamento applicativo e logica di business
+L’applicazione implementa:
 
----
-
-## 1. Struttura Generale del Progetto
-
-Il progetto è strutturato come una **web application Jakarta EE** basata su Servlet, con risorse statiche HTML/JS/CSS.
-
-Struttura logica principale:
-
-- `web.servlet` → Servlet HTTP (API backend)
-- `persistence.dao` → Accesso al database (DAO JDBC)
-- `web.monitor` → Client HTTP verso il servizio di monitoraggio
-- `static/` → Frontend (HTML, CSS, JavaScript)
+* **Backend applicativo centrale** (Servlet Jakarta EE + DAO JDBC)
+* **Frontend web** (pagine statiche HTML/CSS/JS)
+* **Autenticazione e autorizzazione** tramite **Spring Security**
+* Integrazione con servizio esterno **CoffeeMonitor** (WAR su Tomcat) tramite **proxy** dal backend principale
 
 ---
 
-## 2. Servlet Backend (API)
+## Stack Tecnologico
 
-### 🔹 Autenticazione e Routing
-- **RoutingServlet**
-    - Gestisce login, logout e reindirizzamento in base al ruolo
-    - Imposta il ruolo in sessione
-    - È il punto centrale di controllo degli accessi
-
----
-
-### 🔹 Customer (Cliente)
-
-- **CustomerConnectServlet**
-    - Connette un cliente a un distributore
-    - Imposta lo stato di connessione lato backend
-
-- **CustomerDisconnectServlet**
-    - Disconnette il cliente dal distributore
-
-- **CustomerDashboardServlet**
-    - Fornisce i dati del cliente loggato (username, credito)
+* Java
+* Servlet (Jakarta EE)
+* Spring Security
+* JDBC DAO (senza ORM)
+* Frontend: HTML + JavaScript (fetch/AJAX)
 
 ---
 
-### 🔹 Distributor (Simulazione Distributore)
+## Struttura del Progetto
 
-- **DistributorPollServlet**
-    - Endpoint di polling usato dallo schermo del distributore
-    - Verifica se un cliente è connesso
-    - Restituisce username e credito
-
-- **DistributorBeveragesServlet**
-    - Restituisce la lista delle bevande disponibili
-
-- **DistributorPurchaseServlet**
-    - Gestisce l’erogazione della bevanda
-    - Scala il credito
-    - Aggiorna le scorte
+* `src/main/java/.../web/servlet` → Servlet HTTP (API backend)
+* `src/main/java/.../persistence/dao` → DAO JDBC
+* `src/main/java/.../security` → Configurazione Spring Security + filtri (bridge legacy)
+* `src/main/resources/static` → Frontend statico (HTML/CSS/JS)
 
 ---
 
-### 🔹 Manager (Gestore)
+## Autenticazione e Sicurezza
 
-- **ManagerDistributorsServlet**
-    - Lista distributori
-    - Creazione distributori
-    - Eliminazione distributori
-    - Cambio stato (attivo / manutenzione / disattivo)
+### Login / Logout (Spring Security)
 
-- **ManagerMaintainersServlet**
-    - Lista manutentori
-    - Creazione manutentori
-    - Eliminazione manutentori
+* Login page: `GET /login.html`
+* Login submit: `POST /auth/login`
+* Logout: `POST /auth/logout`
 
-- **MonitorSyncServlet**
-    - Sincronizza tutti i distributori presenti nel DB principale
-    - Legge i dati **direttamente dal database**
-    - Espone un endpoint invocabile dal pannello Manager
+### Ruoli
 
----
+* `ROLE_CUSTOMER`
+* `ROLE_MAINTAINER`
+* `ROLE_MANAGER`
 
-### 🔹 Maintainer (Manutentore)
+### CSRF + AJAX
 
-- **MaintainerDistributorsServlet**
-    - Rifornimento scorte dei distributori
-    - Cambio stato distributori
-    - Operazioni tecniche
-    - Aggiorna automaticamente anche il servizio di monitoraggio
+La protezione CSRF è attiva.
+
+* Il token viene esposto come cookie `XSRF-TOKEN`.
+* Le richieste `POST` via AJAX devono inviare l’header: `X-XSRF-TOKEN: <token>`.
+
+Gli helper JS (`apiHelpers.js`) gestiscono automaticamente l’invio del CSRF token sulle richieste `POST`.
 
 ---
 
-## 3. DAO e Persistenza
+## Integrazione con CoffeeMonitor (WAR su Tomcat)
 
-Tutta la persistenza è gestita tramite **DAO JDBC**, senza ORM.
+CoffeeMonitor gira su un Tomcat separato (porta tipica **8081**) e fornisce lo stato runtime dei distributori.
 
-Principali DAO:
-- `UserDAO`
-- `DistributorDAO`
-- `BeverageDAO`
-- `ManagerReadDAO`
+Per evitare problemi di **CORS** (8080 → 8081), il progetto principale usa un **proxy server-to-server**:
 
-Ogni DAO:
-- apre connessioni JDBC esplicite
-- esegue query SQL dirette
-- solleva `DaoException` in caso di errore
+* Proxy nel progetto principale:
+    * `GET /api/monitor/map` → il backend chiama CoffeeMonitor e restituisce lo stesso JSON al frontend.
+
+> **Nota:** l’URL interno del monitor (esempio in locale) è:
+> `http://localhost:8081/CoffeeMonitor_war_exploded/api/monitor/map`
+> (può variare in base al deploy/context path su Tomcat).
 
 ---
 
-## 4. Frontend – Risorse Statiche
+## Endpoint
 
-Le risorse frontend si trovano in `src/main/resources/static`.
+### Routing (legacy redirect)
 
-### 🔹 JavaScript principali
+**RoutingServlet**
 
-- **apiHelpers.js**
-    - Wrapper per `fetch`
-    - Gestione errori
-    - Uniforma chiamate GET / POST
+* `POST /route/login`
+* `POST /route/register`
+* `GET|POST /route/logout`
 
-- **manager.main.js**
-    - Pannello Gestore
-    - Caricamento distributori
-    - Filtri e ricerca
-    - Modal cambio stato
-    - Avvio sincronizzazione monitor
+> Queste route gestiscono redirect/compatibilità legacy e sessioni “storiche”. L’autenticazione vera è gestita da Spring Security.
 
-- **distributor.poll.js**
-    - Simulazione schermo distributore
-    - Polling stato cliente
-    - Acquisto bevande
-    - Invio heartbeat periodico
+### Customer (Cliente)
+
+**CustomerServlet**
+
+* `POST /api/customer/register` *(public)*
+* `GET /api/customer/get` *(ROLE_CUSTOMER)*
+* `GET /api/customer/me` *(ROLE_CUSTOMER)*
+
+**CustomerConnectionServlet**
+
+* `POST /api/customer/connect` *(ROLE_CUSTOMER)*
+* `POST /api/customer/disconnect` *(ROLE_CUSTOMER)*
+* `GET /api/customer/current-connection` *(ROLE_CUSTOMER)*
+
+**CustomerTopUpServlet**
+
+* `POST /api/customer/topup` *(ROLE_CUSTOMER)*
+
+### Distributor (Schermo Distributore)
+
+**DistributorScreenServlet**
+
+* `GET /api/distributor/poll` *(public)*
+* `GET /api/distributor/beverages` *(public)*
+* `POST /api/distributor/purchase` *(ROLE_CUSTOMER)*
+
+**MonitorProxyServlet**
+
+* `POST /monitor/heartbeat` *(public)*
+
+### Maintainer (Manutentore)
+
+**MaintainerServlet**
+
+* `GET /api/maintainer/me` *(ROLE_MAINTAINER)*
+
+**MaintainerDistributorsServlet**
+
+* `POST /api/maintainer/distributors/refill` *(ROLE_MAINTAINER)*
+* `POST /api/maintainer/distributors/status` *(ROLE_MAINTAINER)*
+
+### Manager (Gestore)
+
+**ManagerServlet**
+
+* `GET /api/manager/maintainers.xml` *(ROLE_MANAGER)*
+* `GET /api/manager/maintainers/list` *(ROLE_MANAGER)*
+* `POST /api/manager/maintainers/create` *(ROLE_MANAGER)*
+* `POST /api/manager/maintainers/delete` *(ROLE_MANAGER)*
+* `GET /api/manager/distributors/list` *(ROLE_MANAGER)*
+* `POST /api/manager/distributors/create` *(ROLE_MANAGER)*
+* `POST /api/manager/distributors/delete` *(ROLE_MANAGER)*
+* `POST /api/manager/distributors/status` *(ROLE_MANAGER)*
+
+**MonitorSyncServlet**
+
+* `POST /api/monitor/sync` *(ROLE_MANAGER)*
+
+### XML Stato distributori (DB + Monitor)
+
+**DistributorsStateXmlServlet**
+
+* `GET /api/distributors/state.xml` *(ROLE_MANAGER / ROLE_MAINTAINER)*
+
+### Proxy verso CoffeeMonitor
+
+**MonitorMapProxyServlet**
+
+* `GET /api/monitor/map` *(ROLE_MANAGER / ROLE_MAINTAINER)*
 
 ---
 
-### 🔹 HTML principali
+## Frontend (Static)
 
-- `login.html`
-- `gestore/index.html`
-- `manutenzione/index.html`
-- `distributore/index.html`
-- `cliente/index.html`
+Directory: `src/main/resources/static`
 
-Ogni pagina:
-- usa fetch verso le servlet backend
-- non contiene logica applicativa critica
-- delega tutto al backend
+**Pagine principali:**
+* `login.html`
+* `cliente/index.html`
+* `manutenzione/index.html`
+* `gestore/index.html`
+* `distributore/index.html`
 
----
-
-## 5. Gestione Ruoli e Sessioni
-
-Il progetto utilizza:
-- sessione HTTP standard
-- attributo `SESSION_ROLE`
-- controllo ruolo **in ogni servlet**
-
-Nessun endpoint critico è accessibile senza ruolo corretto.
+**JavaScript principali:**
+* `js/apiHelpers.js` → wrapper `fetch` + CSRF + gestione errori 401/403
+* `js/client.main.js` → dashboard cliente
+* `js/maintainer.main.js` → dashboard manutentore
+* `js/manager.main.js` → dashboard gestore (include overlay stati monitor via `/api/monitor/map`)
+* `js/distributor.poll.js` → polling schermo distributore
 
 ---
 
-## 6. Sincronizzazione Stato Distributori
+## Avvio in Locale (dev)
 
-Quando:
-- un distributore viene creato
-- viene eliminato
-- cambia stato
-- viene rifornito
+### 1) Avvia il progetto principale (porta 8080)
 
-Il backend principale:
-- aggiorna il proprio database
-- invia **best-effort** l’aggiornamento al servizio di monitoraggio
+* Run dell’app principale (Spring Boot / embedded Tomcat).
+* Apri: `http://localhost:8080/login.html`
 
-In aggiunta, è disponibile una **sincronizzazione completa manuale** tramite servlet dedicata.
+### 2) Avvia CoffeeMonitor (porta 8081)
+
+* Deploy WAR su Tomcat esterno.
+* Verifica: `http://localhost:8081/CoffeeMonitor_war_exploded/api/monitor/map` (o context equivalente).
+
+### 3) Verifica proxy dal progetto principale
+
+* Verificare che il backend principale riesca a comunicare con il monitor:
+* `http://localhost:8080/api/monitor/map`
