@@ -351,7 +351,7 @@ public class ManagerServlet extends HttpServlet {
             // 2) Monitor (best-effort): aggiorna lo stato
             MonitorClient.updateStatus(id, statusEnum);
 
-            // 🔥 FIX: se imposto ACTIVE, devo “ravvivare” il runtime del monitor
+            // FIX: se imposto ACTIVE, devo “ravvivare” il runtime del monitor
             if (isActive(statusEnum)) {
                 MonitorClient.heartbeat(id);
             }

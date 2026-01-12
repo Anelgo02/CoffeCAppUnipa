@@ -21,6 +21,8 @@ import java.util.Map;
         "/api/customer/disconnect",
         "/api/customer/current-connection"
 })
+
+/*Gestisce l'interazione tra il mondo digitale e il distributore fisico.*/
 public class CustomerConnectionServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
@@ -88,7 +90,7 @@ public class CustomerConnectionServlet extends HttpServlet {
             // Regole:
             // 1) MAINTENANCE (DB principale) => blocca sempre
             // 2) FAULT runtime (monitor) => blocca
-            // 3) FAULT nel DB principale => blocca (opzionale ma consigliato)
+            // 3) FAULT nel DB principale => blocca (opzionale)
             // -----------------------------
 
             String dbStatus = safeUpper(distributorDAO.findStatusByCode(code)); // ACTIVE/MAINTENANCE/FAULT
@@ -122,9 +124,6 @@ public class CustomerConnectionServlet extends HttpServlet {
                 return;
             }
 
-            // (Se vuoi: se runtime dice MAINTENANCE, puoi bloccare anche qui.
-            // Di norma però la manutenzione "fonte di verità" è il DB principale.)
-            // if ("MAINTENANCE".equals(runtimeStatus)) { ... }
 
             // Ok, può connettersi
             connectionDAO.connect(userOpt.get().getId(), distributorId);

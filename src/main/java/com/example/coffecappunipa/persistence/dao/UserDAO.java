@@ -29,14 +29,15 @@ public class UserDAO {
     }
 
 
-    public long createCustomer(String username, String email) {
-        String sql = "INSERT INTO users(username, email, role, credit) VALUES(?, ?, 'CUSTOMER', 0.00)";
+    public long createCustomer(String username, String email, String passwordHash) {
+        String sql = "INSERT INTO users(username, email, password_hash, role, credit) VALUES(?, ?, ?, 'CUSTOMER', 0.00)";
 
         try (Connection conn = DbConnectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, username);
             ps.setString(2, email);
+            ps.setString(3, passwordHash);
 
             int updated = ps.executeUpdate();
             if (updated != 1) throw new DaoException("Inserimento user fallito (righe modificate=" + updated + ")");

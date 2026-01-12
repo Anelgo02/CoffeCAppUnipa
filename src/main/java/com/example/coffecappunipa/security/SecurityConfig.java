@@ -61,14 +61,13 @@ public class SecurityConfig {
 
                         // public endpoints
                         .requestMatchers("/api/customer/register").permitAll()
-                        .requestMatchers("/api/distributor/poll", "/api/distributor/beverages").permitAll()
+                        .requestMatchers("/api/distributor/boot","/api/distributor/poll", "/api/distributor/beverages", "/api/distributor/purchase").permitAll()
 
                         // pages role-based
                         .requestMatchers("/gestore/**").hasRole("MANAGER")
                         .requestMatchers("/manutenzione/**").hasRole("MAINTAINER")
                         .requestMatchers("/cliente/**").hasRole("CUSTOMER")
 
-                        // manager APIs
                         .requestMatchers(
                                 "/api/manager/maintainers.xml",
                                 "/api/manager/maintainers/list",
@@ -88,8 +87,6 @@ public class SecurityConfig {
                                 "/api/maintainer/distributors/status"
                         ).hasRole("MAINTAINER")
 
-                        // distributor purchase (movimento credito/scorte) => CUSTOMER
-                        .requestMatchers("/api/distributor/purchase").hasRole("CUSTOMER")
 
                         // customer APIs
                         .requestMatchers(

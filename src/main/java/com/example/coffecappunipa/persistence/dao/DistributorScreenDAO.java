@@ -82,6 +82,7 @@ public class DistributorScreenDAO {
         if (sugarQty > 10) sugarQty = 10;
 
         // 1) Lock connessione attiva + ricavo customerId/distributorId
+        //impedisce che l'utente si disconnetta mentre performa l'acquisto
         String lockConnSql =
                 "SELECT u.id AS customer_id, d.id AS distributor_id " +
                         "FROM customer_connections cc " +

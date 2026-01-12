@@ -26,7 +26,7 @@ public class MonitorSyncServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setHeader("Cache-Control", "no-store");
 
-        // Autorizzazione (coerente con la tua logica legacy)
+        // Autorizzazione
         if (!isManagerOrMaintainer(req)) {
             resp.setStatus(403);
             resp.getWriter().write("{\"ok\":false,\"message\":\"ruolo non autorizzato\"}");

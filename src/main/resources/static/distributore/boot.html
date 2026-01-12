@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avvio Sistema - Coffee Capp</title>
+    <!-- Riutilizziamo il tuo foglio di stile principale per la coerenza -->
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Piccola aggiunta locale per il log di caricamento (opzionale) */
+        .boot-log {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: left;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+            display: none; /* Nascosto di default */
+        }
+        .boot-log div {
+            margin-bottom: 0.3rem;
+        }
+        .step-ok { color: var(--colore-primario); font-weight: bold; }
+        .step-err { color: var(--danger); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Coffee Capp UniPA - System Boot</h1>
+</header>
+
+<main>
+    <!-- Usiamo .form-container per avere il box bianco centrato con ombra -->
+    <div class="form-container">
+        <h2>Inizializzazione Hardware</h2>
+        <p>Inserire il codice identificativo della macchina per avviare il software di vendita.</p>
+
+        <form id="boot-form" onsubmit="return false;">
+            <div class="form-group">
+                <label for="dist-code" style="display:block; text-align:left; margin-bottom:0.5rem; font-weight:600; color:var(--colore-primario);">ID Distributore</label>
+                <!-- Stile input ereditato da style.css -->
+                <input type="text" id="dist-code" name="code" placeholder="Es. UNIPA-001" required autofocus>
+            </div>
+
+            <!-- Stile bottone ereditato da style.css -->
+            <button type="submit" id="btn-boot" class="btn">Avvia Sistema</button>
+        </form>
+
+        <!-- Area messaggi di errore (stile simile a noscript-warning) -->
+        <div id="error-box" class="noscript-warning" style="display:none; margin-top: 1.5rem;"></div>
+
+        <!-- Log visivo delle operazioni -->
+        <div id="boot-log" class="boot-log"></div>
+    </div>
+</main>
+
+<footer>
+    <p>© 2025 Coffee Capp UniPA</p>
+</footer>
+
+<script>
+    const form = document.getElementById("boot-form");
+    const btn = document.getElementById("btn-boot");
+    const errorBox = document.getElementById("error-box");
+    const logBox = document.getElementById("boot-log");
+
+    function log(msg, type="info") {
+        logBox.style.display = "block";
+        const line = document.createElement("div");
+        if(type === "success") line.className = "step-ok";
+        if(type === "error") line.className = "step-err";
+        line.textContent = "> " + msg;
+        logBox.appendChild(line);
+    }
+
+    form.addEventListener("submit", async () => {
+        const code = document.getElementById("dist-code").value.trim();
+        if (!code) return;
+
+        // Reset interfaccia
+        errorBox.style.display = "none";
+        logBox.innerHTML = "";
+        btn.disabled = true;
+        btn.textContent = "Avvio in corso...";
+
+        log("Verifica connettività server...");
+
+        try {
+            // 1. Chiamata alla Servlet di Boot
+            const response = await fetch("/api/distributor/boot?code=" + encodeURIComponent(code), {
+                method: "POST"
+            });
+
+            // 2. Parsing risposta
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error("Errore comunicazione server (JSON non valido)");
+            }
+
+            if (response.ok && data.ok) {
+                log("Autenticazione hardware: OK", "success");
+                log("Caricamento configurazione: OK", "success");
+                log("Avvio interfaccia grafica...", "success");
+
+                // Piccolo ritardo per far leggere all'utente che è andato tutto bene
+                setTimeout(() => {
+                    // 3. Redirect alla schermata operativa (index.html)
+                    // Passiamo il codice nell'URL così la pagina sa chi è
+                    window.location.href = `index.html?code=${encodeURIComponent(code)}`;
+                }, 1500);
+
+            } else {
+                // Errore logico (es. distributore non trovato nel DB)
+                throw new Error(data.message || "Errore sconosciuto durante il boot");
+            }
+
+        } catch (err) {
+            console.error(err);
+            log("BOOT FALLITO", "error");
+
+            // Mostra il box rosso di errore
+            errorBox.textContent = err.message;
+            errorBox.style.display = "block";
+
+            // Riabilita il bottone per riprovare
+            btn.disabled = false;
+            btn.textContent = "Riprova Avvio";
+        }
+    });
+</script>
+
+</body>
+</html>

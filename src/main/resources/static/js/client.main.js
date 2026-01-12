@@ -13,8 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnDisconnect = document.getElementById("btn-disconnect");
     const distInput = document.getElementById("distributor-id");
 
-    const btnGoDist = document.getElementById("btn-go-distributor");
-
     const rechargeForm = document.querySelector("#ricarica form");
     const rechargeInput = document.getElementById("recharge-amount");
 
@@ -40,30 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error(err);
             elName.textContent = "Cliente";
             elCredit.textContent = "—";
-        }
-    }
-
-    async function refreshGoToDistributorButton() {
-        if (!btnGoDist) return;
-
-        try {
-            const data = await apiGetJSON("/api/customer/current-connection");
-
-            // QUI serve distributorCode (non distributorId)
-            if (data && data.ok && data.connected && data.distributorCode) {
-                btnGoDist.style.display = "";
-                btnGoDist.style.animation = "go-distributor 1s ease-in forwards";
-                btnGoDist.onclick = () => {
-                    window.location.href = `/distributore/index.html?code=${encodeURIComponent(data.distributorCode)}`;
-                };
-            } else {
-                btnGoDist.style.display = "none";
-                btnGoDist.style.animation = "";
-                btnGoDist.onclick = null;
-            }
-        } catch (err) {
-            btnGoDist.style.display = "none";
-            btnGoDist.onclick = null;
         }
     }
 

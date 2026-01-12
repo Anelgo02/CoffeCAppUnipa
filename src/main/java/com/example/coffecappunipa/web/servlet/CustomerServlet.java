@@ -8,6 +8,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiReactivePasswordChecker;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 public class CustomerServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
+    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -50,6 +53,7 @@ public class CustomerServlet extends HttpServlet {
 
         String username = req.getParameter("username");
         String email = req.getParameter("email");
+        String passwordRaw = req.getParameter("password");
 
         if (isBlank(username)) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -61,6 +65,12 @@ public class CustomerServlet extends HttpServlet {
             resp.getWriter().write("{\"ok\":false,\"message\":\"email obbligatoria\"}");
             return;
         }
+        if (isBlank(passwordRaw)) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("{\"ok\":false,\"message\":\"password obbligatoria\"}");
+            return;
+        }
+
 
         try {
             if (userDAO.findByUsername(username).isPresent()) {
@@ -69,7 +79,9 @@ public class CustomerServlet extends HttpServlet {
                 return;
             }
 
-            long newId = userDAO.createCustomer(username, email);
+            String passwordHash = bCryptPasswordEncoder.encode(passwordRaw);
+
+            long newId = userDAO.createCustomer(username, email, passwordHash);
 
             resp.setStatus(HttpServletResponse.SC_CREATED);
             resp.getWriter().write("{\"ok\":true,\"id\":" + newId + "}");
