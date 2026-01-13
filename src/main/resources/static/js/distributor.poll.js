@@ -2,8 +2,14 @@
 
 // --- CONFIG ---
 const MONITOR_BASE_URL = "http://localhost:8081/CoffeeMonitor_war_exploded";
+
 let currentUser = null;
 let messageTimeout = null;
+
+// MEMORIA CONDIVISA:
+// Questa variabile serve da "ponte" tra pollConnectedUser (che scopre lo stato)
+// e sendHeartbeat (che deve sapere se inviare o no).
+let currentMachineStatus = "ACTIVE";
 
 function getDistributorCode() {
     const params = new URLSearchParams(window.location.search);
@@ -29,15 +35,47 @@ function showDistMessage(text, isError = false, timeout = 4000) {
 }
 
 /**
- * LOGICA CORE: Cambio Stato (Standby <-> Attivo)
+ * LOGICA CORE: Cambio Stato Interfaccia
  */
-function renderConnectedState(connected, user) {
+function renderConnectedState(connected, user, machineStatus) {
+    // Aggiorniamo la memoria condivisa per l'heartbeat
+    if (machineStatus) {
+        currentMachineStatus = machineStatus;
+    }
+
     const standbyScreen = document.getElementById("standby-screen");
     const activeScreen = document.getElementById("distributor-screen");
+    const maintScreen = document.getElementById("maintenance-screen");
 
     const usernameEl = document.getElementById("dist-username");
     const creditEl = document.getElementById("dist-credit");
     const form = document.getElementById("purchase-area");
+    const btnDisconnect = document.getElementById("btn-disconnect-from-dist");
+
+    // 1. Controllo Stato Macchina (Priorità massima: se rotta, blocca tutto)
+    if (machineStatus && machineStatus !== "ACTIVE") {
+        if (maintScreen) {
+            maintScreen.style.display = "block";
+            standbyScreen.style.display = "none";
+            activeScreen.style.display = "none";
+
+            // Aggiorna messaggio specifico se esiste nell'HTML
+            const msgEl = document.getElementById("maintenance-msg");
+            if(msgEl) {
+                if(machineStatus === "MAINTENANCE") msgEl.textContent = "⚠️ Manutenzione in corso";
+                else if(machineStatus === "FAULT") msgEl.textContent = "❌ Guasto Tecnico";
+                else msgEl.textContent = "🚫 Non Disponibile";
+            }
+            // Aggiorna codice visualizzato nella schermata manutenzione
+            const codeMaintEl = document.getElementById("maint-code");
+            if(codeMaintEl) codeMaintEl.textContent = getDistributorCode();
+
+            return;
+        }
+        connected = false;
+    } else {
+        if (maintScreen) maintScreen.style.display = "none";
+    }
 
     if (!connected) {
         // --- STATO STANDBY ---
@@ -46,10 +84,16 @@ function renderConnectedState(connected, user) {
         if (standbyScreen) standbyScreen.style.display = "block";
         if (activeScreen) activeScreen.style.display = "none";
 
+        if (usernameEl) usernameEl.textContent = "Nessun utente";
+        if (creditEl) {
+            creditEl.dataset.value = "0";
+            creditEl.textContent = "0.00 €";
+        }
         if (form) {
             form.style.display = "none";
             form.setAttribute("aria-hidden", "true");
         }
+        if (btnDisconnect) btnDisconnect.style.display = "none";
         return;
     }
 
@@ -68,38 +112,43 @@ function renderConnectedState(connected, user) {
         form.style.display = "block";
         form.setAttribute("aria-hidden", "false");
     }
+    if (btnDisconnect) btnDisconnect.style.display = "inline-block";
 }
 
 /**
- * POLL: Chiede al server se c'è qualcuno
+ * POLL: Chiede al server stato e utente
  */
 async function pollConnectedUser() {
     const code = getDistributorCode();
 
-    // Se manca il codice, lo script guardiano nell'HTML dovrebbe aver già fatto redirect.
-    // Ma per sicurezza:
-    if (!code) return;
+    if (!code) {
+        console.warn("Codice mancante. Redirect al boot.");
+        window.location.replace("boot.html");
+        return;
+    }
 
     try {
         const data = await apiGetJSON(`/api/distributor/poll?code=${encodeURIComponent(code)}`);
 
         if (!data || !data.ok) throw new Error("Risposta server non valida");
 
+        const status = data.status || "ACTIVE";
+
+        // renderConnectedState aggiornerà la variabile globale currentMachineStatus
+
         if (!data.connected) {
-            // Nessuno connesso -> Mostra Standby
-            renderConnectedState(false);
+            renderConnectedState(false, null, status);
         } else {
-            // Qualcuno connesso -> Mostra Interfaccia Vendita
             renderConnectedState(true, {
                 username: data.username || "Cliente",
                 credit: Number(data.credit ?? 0)
-            });
+            }, status);
         }
 
     } catch (err) {
         console.error("Polling error:", err);
-        // In caso di errore rete, torniamo prudentemente in standby
         renderConnectedState(false);
+        showDistMessage("Connessione server persa...", true, 2000);
     }
 }
 
@@ -144,6 +193,7 @@ async function loadBeveragesIntoGrid() {
  */
 async function doPurchase() {
     const code = getDistributorCode();
+
     if (!code || !currentUser) {
         showDistMessage("Errore: sessione non valida.", true);
         return;
@@ -172,21 +222,18 @@ async function doPurchase() {
             }
             showDistMessage("Erogazione in corso... Prendi il tuo caffè!", false, 4000);
             selectedBtn.classList.remove("selected");
+
+            pollConnectedUser();
             return;
         }
 
-        // Se arriviamo qui, c'è stato un problema ma non un'eccezione
         showDistMessage("Errore generico erogazione.", true, 3000);
 
     } catch (err) {
-        // Gestione errori specifici dal backend
         const m = (err.message || "").toLowerCase();
-
-        if (m.includes("credito")) {
-            showDistMessage("Credito insufficiente!", true, 3000);
-        } else if (m.includes("scorte")) {
-            showDistMessage("Prodotto esaurito (Scorte insufficienti).", true, 3000);
-        } else if (m.includes("nessun cliente")) {
+        if (m.includes("credito")) showDistMessage("Credito insufficiente!", true, 3000);
+        else if (m.includes("scorte")) showDistMessage("Prodotto esaurito.", true, 3000);
+        else if (m.includes("nessun cliente")) {
             showDistMessage("Sessione scaduta.", true, 2000);
             renderConnectedState(false);
         } else {
@@ -202,6 +249,13 @@ async function sendHeartbeat() {
     const code = getDistributorCode();
     if (!code) return;
 
+    // --- CONTROLLO MEMORIA CONDIVISA ---
+    // Leggiamo la variabile che è stata aggiornata dall'altro loop (poll)
+    if (currentMachineStatus !== "ACTIVE" && currentMachineStatus !== "ATTIVO") {
+        console.log("Heartbeat saltato: stato macchina è " + currentMachineStatus);
+        return;
+    }
+
     try {
         await fetch(`${MONITOR_BASE_URL}/api/monitor/heartbeat`, {
             method: "POST",
@@ -209,7 +263,8 @@ async function sendHeartbeat() {
             body: new URLSearchParams({ code }),
             cache: "no-cache"
         });
-    } catch (_) { /* ignore failure */ }
+        console.log("Heartbeat inviato per " + code);
+    } catch (_) { /* ignore */ }
 }
 
 function escapeHtml(s) {
@@ -219,15 +274,14 @@ function escapeHtml(s) {
 // INIT
 document.addEventListener("DOMContentLoaded", () => {
     loadBeveragesIntoGrid();
-    pollConnectedUser(); // Primo controllo immediato
+    pollConnectedUser();
 
     const btnPurchase = document.getElementById("btn-purchase");
     if (btnPurchase) {
         btnPurchase.addEventListener("click", doPurchase);
     }
 
-    // Polling ogni 3 secondi (più reattivo)
     setInterval(pollConnectedUser, 3000);
-    // Heartbeat ogni 60 secondi
     setInterval(sendHeartbeat, 60000);
+    sendHeartbeat();
 });

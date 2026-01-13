@@ -1,192 +1,210 @@
 # CoffeeCApp UniPA — Progetto Principale (Backend + Frontend)
 
-Questo repository contiene il **progetto principale** del sistema *CoffeeCApp UniPA*.
+Questo repository contiene **Backend (Spring Boot)** + **Frontend (SPA)** del sistema **CoffeeCApp UniPA**.
 
-L’applicazione implementa:
-
-* **Backend applicativo centrale** (Servlet Jakarta EE + DAO JDBC)
-* **Frontend web** (pagine statiche HTML/CSS/JS)
-* **Autenticazione e autorizzazione** tramite **Spring Security**
-* Integrazione con servizio esterno **CoffeeMonitor** (WAR su Tomcat) tramite **proxy** dal backend principale
-
----
-
-## Stack Tecnologico
-
-* Java
-* Servlet (Jakarta EE)
-* Spring Security
-* JDBC DAO (senza ORM)
-* Frontend: HTML + JavaScript (fetch/AJAX)
+Il progetto implementa un’architettura **Web/IoT ibrida** per la gestione di una rete di distributori automatici intelligenti, simulando scenari realistici di:
+- telemetria e heartbeat
+- pagamenti e concorrenza (race conditions)
+- manutenzione remota
+- sincronizzazione con un servizio esterno di monitoraggio (**CoffeeMonitor**)
 
 ---
 
-## Struttura del Progetto
-
-* `src/main/java/.../web/servlet` → Servlet HTTP (API backend)
-* `src/main/java/.../persistence/dao` → DAO JDBC
-* `src/main/java/.../security` → Configurazione Spring Security + filtri (bridge legacy)
-* `src/main/resources/static` → Frontend statico (HTML/CSS/JS)
-
----
-
-## Autenticazione e Sicurezza
-
-### Login / Logout (Spring Security)
-
-* Login page: `GET /login.html`
-* Login submit: `POST /auth/login`
-* Logout: `POST /auth/logout`
-
-### Ruoli
-
-* `ROLE_CUSTOMER`
-* `ROLE_MAINTAINER`
-* `ROLE_MANAGER`
-
-### CSRF + AJAX
-
-La protezione CSRF è attiva.
-
-* Il token viene esposto come cookie `XSRF-TOKEN`.
-* Le richieste `POST` via AJAX devono inviare l’header: `X-XSRF-TOKEN: <token>`.
-
-Gli helper JS (`apiHelpers.js`) gestiscono automaticamente l’invio del CSRF token sulle richieste `POST`.
+## Obiettivi (in pratica)
+- **Separare nettamente** client (SPA) e server (API) senza rendering lato server.
+- Usare **Servlet standard** (Jakarta EE) come controller, dentro un container Spring Boot.
+- Persistenza **JDBC puro + DAO**, con controllo totale su SQL e transazioni.
+- Security “ibrida”: **utenti umani** con Spring Security + **dispositivi IoT** con validazione applicativa.
 
 ---
 
-## Integrazione con CoffeeMonitor (WAR su Tomcat)
+## Architettura e Stack Tecnologico
 
-CoffeeMonitor gira su un Tomcat separato (porta tipica **8081**) e fornisce lo stato runtime dei distributori.
+### Backend
+- **Java + Spring Boot** (come container per **Servlet Jakarta EE**)
+- **Pattern MVC** (controller = servlet, model = DAO/entità, view = SPA statica)
+- **Persistenza: DAO + JDBC puro**
+    - **Niente ORM (Hibernate/JPA)**: scelta intenzionale per:
+        - controllo assoluto sulle query SQL
+        - performance e prevenzione N+1 (batch loading dove necessario)
+        - gestione manuale delle transazioni **ACID** (commit/rollback) in operazioni critiche (es. pagamenti)
 
-Per evitare problemi di **CORS** (8080 → 8081), il progetto principale usa un **proxy server-to-server**:
+### Frontend
+- **Single Page Application** in:
+    - HTML5
+    - CSS3
+    - JavaScript Vanilla
+- Comunicazione con backend tramite **Fetch API**
+- Persistenza locale tramite **localStorage** (fondamentale per simulare la memoria “flash” dei dispositivi IoT)
 
-* Proxy nel progetto principale:
-    * `GET /api/monitor/map` → il backend chiama CoffeeMonitor e restituisce lo stesso JSON al frontend.
-
-> **Nota:** l’URL interno del monitor (esempio in locale) è:
-> `http://localhost:8081/CoffeeMonitor_war_exploded/api/monitor/map`
-> (può variare in base al deploy/context path su Tomcat).
-
----
-
-## Endpoint
-
-### Routing (legacy redirect)
-
-**RoutingServlet**
-
-* `POST /route/login`
-* `POST /route/register`
-* `GET|POST /route/logout`
-
-> Queste route gestiscono redirect/compatibilità legacy e sessioni “storiche”. L’autenticazione vera è gestita da Spring Security.
-
-### Customer (Cliente)
-
-**CustomerServlet**
-
-* `POST /api/customer/register` *(public)*
-* `GET /api/customer/get` *(ROLE_CUSTOMER)*
-* `GET /api/customer/me` *(ROLE_CUSTOMER)*
-
-**CustomerConnectionServlet**
-
-* `POST /api/customer/connect` *(ROLE_CUSTOMER)*
-* `POST /api/customer/disconnect` *(ROLE_CUSTOMER)*
-* `GET /api/customer/current-connection` *(ROLE_CUSTOMER)*
-
-**CustomerTopUpServlet**
-
-* `POST /api/customer/topup` *(ROLE_CUSTOMER)*
-
-### Distributor (Schermo Distributore)
-
-**DistributorScreenServlet**
-
-* `GET /api/distributor/poll` *(public)*
-* `GET /api/distributor/beverages` *(public)*
-* `POST /api/distributor/purchase` *(ROLE_CUSTOMER)*
-
-**MonitorProxyServlet**
-
-* `POST /monitor/heartbeat` *(public)*
-
-### Maintainer (Manutentore)
-
-**MaintainerServlet**
-
-* `GET /api/maintainer/me` *(ROLE_MAINTAINER)*
-
-**MaintainerDistributorsServlet**
-
-* `POST /api/maintainer/distributors/refill` *(ROLE_MAINTAINER)*
-* `POST /api/maintainer/distributors/status` *(ROLE_MAINTAINER)*
-
-### Manager (Gestore)
-
-**ManagerServlet**
-
-* `GET /api/manager/maintainers.xml` *(ROLE_MANAGER)*
-* `GET /api/manager/maintainers/list` *(ROLE_MANAGER)*
-* `POST /api/manager/maintainers/create` *(ROLE_MANAGER)*
-* `POST /api/manager/maintainers/delete` *(ROLE_MANAGER)*
-* `GET /api/manager/distributors/list` *(ROLE_MANAGER)*
-* `POST /api/manager/distributors/create` *(ROLE_MANAGER)*
-* `POST /api/manager/distributors/delete` *(ROLE_MANAGER)*
-* `POST /api/manager/distributors/status` *(ROLE_MANAGER)*
-
-**MonitorSyncServlet**
-
-* `POST /api/monitor/sync` *(ROLE_MANAGER)*
-
-### XML Stato distributori (DB + Monitor)
-
-**DistributorsStateXmlServlet**
-
-* `GET /api/distributors/state.xml` *(ROLE_MANAGER / ROLE_MAINTAINER)*
-
-### Proxy verso CoffeeMonitor
-
-**MonitorMapProxyServlet**
-
-* `GET /api/monitor/map` *(ROLE_MANAGER / ROLE_MAINTAINER)*
+### Sicurezza e integrazione
+- **Spring Security**: autenticazione, autorizzazione (RBAC), protezione CSRF
+- **CoffeeMonitor** (servizio esterno su porta 8081):
+    - comunicazione HTTP sincrona
+    - pattern **Proxy** (per CORS/timeout/degrado controllato)
+    - pattern **Dual Write** (best-effort) sulle operazioni amministrative
 
 ---
 
-## Frontend (Static)
+## 🔐 Security Layer (Strategia Ibrida)
 
-Directory: `src/main/resources/static`
+Qui la differenza è netta: **utenti** ≠ **dispositivi**.
 
-**Pagine principali:**
-* `login.html`
-* `cliente/index.html`
-* `manutenzione/index.html`
-* `gestore/index.html`
-* `distributore/index.html`
+### 1) Autenticazione Utenti (User-Centric)
+Gestita da **Spring Security** per:
+- Cliente (`ROLE_CUSTOMER`)
+- Manutentore (`ROLE_MAINTAINER`)
+- Gestore/Manager (`ROLE_MANAGER`)
 
-**JavaScript principali:**
-* `js/apiHelpers.js` → wrapper `fetch` + CSRF + gestione errori 401/403
-* `js/client.main.js` → dashboard cliente
-* `js/maintainer.main.js` → dashboard manutentore
-* `js/manager.main.js` → dashboard gestore (include overlay stati monitor via `/api/monitor/map`)
-* `js/distributor.poll.js` → polling schermo distributore
+Caratteristiche:
+- **Meccanismo**: form login classico (`/login.html`)
+- **Password**: hashing **BCrypt**
+- **Sessione**: stateful (`JSESSIONID`)
+- **Legacy bridge**: filtro custom `LegacySessionBridgeFilter` che inietta `Principal/Role` nella `HttpSession` standard (compatibilità con servlet preesistenti)
+- **CSRF**: attivo con `CsrfCookieFilter`
+    - espone il token nel cookie `XSRF-TOKEN`
+    - la SPA lo rimanda nelle richieste `POST` (tipicamente header `X-XSRF-TOKEN`)
+
+### 2) Autenticazione Dispositivi (Device-Centric)
+I distributori operano in modalità **kiosk** (unattended): niente password, niente login umano.
+
+Strategia:
+- Le API del distributore (`/api/distributor/**`) sono configurate **permitAll** su Spring Security  
+  (evita redirect al login form)
+- La protezione avviene con **validazione applicativa**
+    - boot: invio ID hardware (es. `UNIPA-001`)
+    - la `DistributorBootServlet` valida l’ID nel DB
+    - se valido: l’ID viene salvato nel `localStorage` del browser del distributore (simula memoria flash)
 
 ---
 
-## Avvio in Locale (dev)
+## 🤖 Ciclo di Vita del Distributore (Simulazione IoT)
 
-### 1) Avvia il progetto principale (porta 8080)
+Il software del distributore (`/distributore/index.html`) implementa una **macchina a stati finiti**.
+La creazione dei distributori può essere effettuata solamente dall'admin,
+questa scelta consente l'attivazione tramite ID del distributore che è già stato aggiunto nel DB.
+### Boot (primo avvio)
+- Uno script “guardiano” controlla `localStorage`
+- Se l’identità macchina non esiste → redirect forzato a `boot.html`
+- Il tecnico inserisce il codice macchina (es. `UNIPA-001`)
+- Il backend valida e registra l’attivazione
 
-* Run dell’app principale (Spring Boot / embedded Tomcat).
-* Apri: `http://localhost:8080/login.html`
+### Standby (idle mode)
+- Loop di **polling** verso il server (es. ogni 3s)
+- UI mostra schermata di attesa: “Connettiti con l’app”
+- Invio periodico di **heartbeat** al servizio esterno CoffeeMonitor
 
-### 2) Avvia CoffeeMonitor (porta 8081)
+### Operatività (active mode)
+- Quando un cliente si connette con l’app, il polling rileva la sessione attiva
+- L’interfaccia si sblocca: credito utente + listino bevande
+- **Transazione sicura**:
+    - pagamento con **lock pessimistico** (`SELECT ... FOR UPDATE`)
+    - prevenzione race condition (es. doppia erogazione / disconnessione durante pagamento)
 
-* Deploy WAR su Tomcat esterno.
-* Verifica: `http://localhost:8081/CoffeeMonitor_war_exploded/api/monitor/map` (o context equivalente).
+>Nota: per testare diversi distributori da browser bisogna usare il bottone resetID per eliminare dalla memoria del kiosk l'identita' del distributore.
+---
 
-### 3) Verifica proxy dal progetto principale
+## 📡 Integrazione con CoffeeMonitor (porta 8081)
 
-* Verificare che il backend principale riesca a comunicare con il monitor:
-* `http://localhost:8080/api/monitor/map`
+Funzioni principali:
+- **Proxy Map**: `GET /api/monitor/map`
+    - il backend fa da proxy per bypassare CORS e gestire timeout/errori (degrado controllato)
+- **Proxy Heartbeat**: `POST /monitor/heartbeat`
+    - inoltra heartbeat dei distributori
+- **Dual Write (Best Effort)**:
+    - provisioning distributore, cambio stato, ecc.
+    - scrittura su DB locale + chiamata al servizio remoto (con gestione fallimenti)
+- **Sync**: `POST /api/monitor/sync`
+    - riconciliazione in caso di disallineamento
+
+---
+
+## 🔌 API Endpoints (Servlet)
+
+> Nota: gli endpoint “Area Distributore” sono **pubblici a livello Spring Security** ma protetti con logica applicativa (validazione ID + stato macchina).
+
+### Area Gestore (`ROLE_MANAGER`)
+- `GET  /api/manager/maintainers.xml` — Export XML staff (generazione manuale via `StringBuilder`)
+- `GET  /api/manager/maintainers/list` — Lista staff (JSON)
+- `POST /api/manager/maintainers/create` — Assunzione staff (transazione multi-tabella)
+- `POST /api/manager/maintainers/delete` — Licenziamento staff
+- `GET  /api/manager/distributors/list` — Lista distributori (merge dati DB + Monitor)
+- `POST /api/manager/distributors/create` — Provisioning nuova macchina
+- `POST /api/manager/distributors/delete` — Rimozione macchina
+- `POST /api/manager/distributors/status` — Cambio stato forzato
+- `POST /api/monitor/sync` — Sync forzata DB ↔ Monitor
+
+### Area Manutentore (`ROLE_MAINTAINER`)
+- `GET  /api/maintainer/me` — Info sessione
+- `POST /api/maintainer/distributors/refill` — Ripristino scorte (full refill)
+- `POST /api/maintainer/distributors/status` — Cambio stato operativo
+
+### Area Cliente (`ROLE_CUSTOMER`)
+- `POST /api/customer/register` — Registrazione (hash password + auto-login)
+- `GET  /api/customer/me` — Profilo + credito
+- `POST /api/customer/topup` — Ricarica credito (transazionale, no-cache)
+- `POST /api/customer/connect` — Handshake con distributore (check manutenzione/guasto)
+- `POST /api/customer/disconnect` — Chiusura sessione
+- `GET  /api/customer/current-connection` — Stato connessione corrente
+
+### Area Distributore (IoT — pubbliche)
+- `POST /api/distributor/boot` — Inizializzazione hardware
+- `GET  /api/distributor/poll` — Check presenza cliente (polling)
+- `GET  /api/distributor/beverages` — Listino prezzi
+- `POST /api/distributor/purchase` — Erogazione bevanda (transazione critica)
+
+---
+
+## 📂 Struttura del Progetto
+
+- `src/main/java/.../web/servlet` → **Controller** (routing + logica web)
+- `src/main/java/.../persistence/dao` → **Data Access Layer** (SQL, transazioni, mapping)
+- `src/main/java/.../security` → Spring Security config + filtri custom
+- `src/main/java/.../web/monitor` → HTTP client / proxy verso CoffeeMonitor
+- `src/main/resources/static` → **Frontend** (HTML/JS/CSS)
+- `src/main/java/.../util` → **Utility**(File di configurazione e utility)
+
+---
+
+## 🚀 Guida Rapida all’Avvio
+
+### Prerequisiti
+- Java (versione coerente col progetto)
+- Maven/Gradle (in base al build usato)
+- MySQL (o DB relazionale equivalente configurato)
+- Tomcat (o container equivalente) per CoffeeMonitor
+
+### 1) Database
+- Assicurati che il DB sia attivo
+- Configura credenziali e URL nel DBMS utilizzando quelle di `application.properties`
+- Importa lo schema SQL del progetto che si trova nella cartella `db`
+
+### 2) Avvia CoffeeMonitor (servizio esterno)
+- Deploy su Tomcat
+- Porta tipica: **8081**
+- Verifica che l’endpoint di heartbeat/map risponda
+
+### 3) Avvia la Main App (CoffeeCApp)
+- Avvia `CoffeeCappApplication`
+- Porta tipica: **8080**
+- Apri: `http://localhost:8080/login.html`
+
+---
+
+## 🧪 Setup iniziale consigliato (flusso reale)
+1. Login come **Gestore**
+2. Crea un distributore (es. `UNIPA-001`)
+3. Apri il distributore in una nuova finestra:
+    - `http://localhost:8080/distributore/index.html`
+4. Se è “vergine”, verrai rediretto a `boot.html`
+5. Inserisci l’ID macchina (`UNIPA-001`) e completa l’attivazione
+6. Ora il distributore entra in standby e inizia polling + heartbeat
+7. Login come **Cliente** e prova:
+    - top-up credito
+    - connect → acquisto → disconnect
+
+---
+
+
+## Licenza
+Progetto universitario/didattico.

@@ -6,43 +6,33 @@
     <title>Distributore Caffè</title>
     <link rel="stylesheet" href="../css/style.css">
 
-    <!-- SCRIPT GUARDIANO: Gestisce l'identità della macchina -->
-    <!-- SCRIPT GUARDIANO: Versione Strict (Solo LocalStorage) -->
+    <!-- SCRIPT GUARDIANO: Protegge l'accesso e gestisce il loop -->
     <script>
         (function() {
-            // 1. Leggiamo l'identità dalla "memoria interna" (LocalStorage)
-            // Questa è l'unica fonte di verità.
-            const savedIdentity = localStorage.getItem("distributor_identity");
+            // 1. Fonte di Verità: LocalStorage
+            const savedCode = localStorage.getItem("distributor_identity");
 
-            // 2. Controllo Severo
-            if (!savedIdentity) {
-                // Se la memoria è vuota, la macchina NON è inizializzata.
-                // Non ci interessa se nell'URL c'è scritto ?code=UNIPA-001.
-                // Potrebbe essere un utente che prova a hackerare l'URL.
-                // Reindirizziamo al BOOT per la procedura ufficiale.
+            // 2. Stato Corrente: URL
+            const params = new URLSearchParams(window.location.search);
+            const urlCode = params.get("code");
+
+            if (!savedCode) {
+                // CASO A: Macchina non inizializzata -> Vai al BOOT
+                // Usiamo replace per non lasciare traccia nella history
                 window.location.replace("boot.html");
             } else {
-                // La macchina è inizializzata (savedIdentity esiste).
-
-                // 3. Controllo estetico dell'URL
-                // Se l'URL non ha il codice o ha un codice diverso (tentativo di manomissione),
-                // forziamo l'URL corretto per coerenza visiva.
-                const params = new URLSearchParams(window.location.search);
-                const urlCode = params.get("code");
-
-                if (urlCode !== savedIdentity) {
-                    // Ricarica la pagina forzando il codice GIUSTO nell'URL
-                    window.location.replace(`index.html?code=${encodeURIComponent(savedIdentity)}`);
+                // CASO B: Macchina inizializzata.
+                // Verifica coerenza URL (se l'URL non ha il codice, lo aggiungiamo)
+                if (urlCode !== savedCode) {
+                    window.location.replace("index.html?code=" + encodeURIComponent(savedCode));
                 }
-
-                // Se siamo qui, savedIdentity c'è e l'URL è corretto.
-                // Il resto della pagina può caricarsi.
+                // Se siamo qui, savedCode esiste e l'URL è corretto. Carichiamo la pagina.
             }
         })();
     </script>
 
     <style>
-        /* Stile specifico per la schermata di attesa */
+        /* Stile schermata Standby */
         .standby-container {
             text-align: center;
             padding: 3rem;
@@ -55,9 +45,7 @@
             margin: 1rem 0;
             letter-spacing: 2px;
         }
-        .pulse {
-            animation: pulse-animation 2s infinite;
-        }
+        .pulse { animation: pulse-animation 2s infinite; }
         @keyframes pulse-animation {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -70,26 +58,26 @@
 <header aria-labelledby="distributore-heading">
     <h1 id="distributore-heading">Distributore Automatico UniPA</h1>
 
-    <!-- Tasto Tecnico per il Reset -->
+    <!-- Tasto nascosto per il Tecnico -->
     <div style="margin-top: 10px;">
         <button id="btn-reset-hardware" type="button" class="btn btn-secondario btn-inline" style="font-size:0.8rem; padding:0.4rem; opacity: 0.7;">
-            ⚙️ Reset ID
+            ⚙️ Reset ID(Per cambiare distributore)
         </button>
     </div>
 </header>
 
 <main>
-    <!-- STATO A: STANDBY (Visibile quando nessuno è connesso) -->
+    <!-- 1. SCHERMATA STANDBY (Visibile se nessuno è connesso) -->
     <div id="standby-screen" class="box-sezione standby-container">
         <h2>☕ Pausa Caffè?</h2>
-        <p>Apri l'app <strong>CoffeeCapp</strong> sul tuo smartphone e connettiti usando questo codice:</p>
+        <p>Apri l'app <strong>CoffeeCapp</strong> e connettiti a:</p>
 
         <div id="display-code-standby" class="code-display">---</div>
 
         <div class="pulse" style="margin-top: 2rem;">In attesa di connessione...</div>
     </div>
 
-    <!-- STATO B: OPERATIVO (Visibile quando l'utente si connette) -->
+    <!-- 2. SCHERMATA OPERATIVA (Visibile se utente connesso) -->
     <section id="distributor-screen" class="box-sezione" aria-labelledby="dist-header" style="display:none;">
 
         <h3 id="dist-header">Schermo Operativo</h3>
@@ -103,7 +91,7 @@
             <fieldset>
                 <legend class="grid-label">Bevanda:</legend>
                 <div id="drink-grid">
-                    <!-- popolata da JS -->
+                    <!-- Popolato via JS -->
                 </div>
             </fieldset>
 
@@ -121,6 +109,13 @@
         <div id="dist-message" role="status" aria-live="polite" class="visually-hidden" data-type="info"></div>
     </section>
 
+    <!-- 3. STATO C: FUORI SERVIZIO (NUOVO) -->
+    <div id="maintenance-screen" class="box-sezione" style="display:none; text-align:center; padding:3rem; background-color:#fff0f0; border:2px solid crimson;">
+        <h1 style="font-size: 3rem; color: crimson;">🚫 FUORI SERVIZIO</h1>
+        <p id="maintenance-msg" style="font-size: 1.5rem; color: #333;">Macchina in manutenzione</p>
+        <div style="margin-top: 2rem; font-size: 0.9rem; color: #666;">Codice: <span id="maint-code">---</span></div>
+    </div>
+
     <noscript>
         <div class="noscript-warning">Attenzione: lo script è disabilitato.</div>
     </noscript>
@@ -133,18 +128,19 @@
 <script src="../js/apiHelpers.js"></script>
 <script src="../js/distributor.poll.js"></script>
 
-<!-- Script per il Reset -->
+<!-- Logica UI Locale (Reset e Display ID) -->
 <script>
-    // Mostra ID nella schermata standby
-    const currentCode = new URLSearchParams(window.location.search).get("code");
-    if(currentCode) {
-        document.getElementById("display-code-standby").textContent = currentCode;
+    // Mostra ID nella standby screen
+    const code = localStorage.getItem("distributor_identity");
+    if(code) {
+        document.getElementById("display-code-standby").textContent = code;
     }
 
+    // Reset Hardware
     document.getElementById("btn-reset-hardware").addEventListener("click", () => {
         if(confirm("ATTENZIONE TECNICO: Vuoi resettare l'identità della macchina?")) {
             localStorage.removeItem("distributor_identity");
-            window.location.href = "boot.html";
+            window.location.replace("boot.html");
         }
     });
 </script>

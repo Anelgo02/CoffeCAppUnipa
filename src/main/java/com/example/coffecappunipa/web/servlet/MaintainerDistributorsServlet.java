@@ -90,6 +90,11 @@ public class MaintainerDistributorsServlet extends HttpServlet {
             // BEST-EFFORT: aggiorna anche il monitor (servizio senza auth)
             MonitorClient.updateStatus(code.trim(), dbStatus);
 
+            //se lo stato è attivo mandiamo un heartbeat
+            if ("ACTIVE".equals(dbStatus)) {
+                MonitorClient.heartbeat(code.trim());
+            }
+
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("{\"ok\":true}");
 

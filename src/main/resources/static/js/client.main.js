@@ -55,9 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 distInput.disabled = false;
             }
 
-            // aggiorna anche la CTA
-            await refreshGoToDistributorButton();
-
         } catch (err) {
             console.error(err);
             showAlert("Errore: " + err.message);
@@ -137,4 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // INIT
     loadCustomerMe();
     refreshConnectionStatus();
+    // Polling ogni 3 secondi per aggiornare il credito in tempo reale
+    setInterval(loadCustomerMe, 3000);
 });

@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         // per evitare di dover iniettare CSRF nel form statico di login
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/auth/login", "/auth/logout")
+                        .ignoringRequestMatchers("/auth/login", "/auth/logout", "/api/distributor/boot","/api/distributor/purchase")
                 )
 
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
@@ -58,6 +58,7 @@ public class SecurityConfig {
                         // static/public
                         .requestMatchers("/login.html", "/cliente/registrazione.html").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/data/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/distributore/**").permitAll()
 
                         // public endpoints
                         .requestMatchers("/api/customer/register").permitAll()

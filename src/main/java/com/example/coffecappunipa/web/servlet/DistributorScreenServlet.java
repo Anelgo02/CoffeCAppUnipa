@@ -1,6 +1,7 @@
 package com.example.coffecappunipa.web.servlet;
 
 import com.example.coffecappunipa.persistence.dao.BeverageDAO;
+import com.example.coffecappunipa.persistence.dao.DistributorDAO;
 import com.example.coffecappunipa.persistence.dao.DistributorScreenDAO;
 import com.example.coffecappunipa.persistence.util.DaoException;
 
@@ -21,6 +22,7 @@ public class DistributorScreenServlet extends HttpServlet {
 
     private final DistributorScreenDAO screenDAO = new DistributorScreenDAO();
     private final BeverageDAO beverageDAO = new BeverageDAO();
+    private final DistributorDAO distributorDAO = new DistributorDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -53,24 +55,35 @@ public class DistributorScreenServlet extends HttpServlet {
         }
 
         try {
-            var opt = screenDAO.findConnectedCustomerByDistributorCode(code);
-            if (opt.isEmpty()) {
-                resp.setStatus(200);
-                resp.getWriter().write("{\"ok\":true,\"connected\":false}");
+
+            String status = distributorDAO.findStatusByCode(code);
+            if(status==null){
+                resp.setStatus(400);
+                resp.getWriter().write("{\"ok\":false,\"message\":\"code obbligatorio\"}");
                 return;
             }
 
-            var c = opt.get();
-            String json = "{"
-                    + "\"ok\":true,"
-                    + "\"connected\":true,"
-                    + "\"customerId\":" + c.customerId + ","
-                    + "\"username\":\"" + escJson(c.username) + "\","
-                    + "\"credit\":" + (c.credit == null ? "0.00" : c.credit.toPlainString())
-                    + "}";
+            var opt = screenDAO.findConnectedCustomerByDistributorCode(code);
+
+            // Costruiamo il JSON
+            StringBuilder json = new StringBuilder();
+            json.append("{")
+                    .append("\"ok\":true,")
+                    .append("\"status\":\"").append(status).append("\",");
+
+            if (opt.isEmpty()) {
+                json.append("\"connected\":false");
+            } else {
+                var c = opt.get();
+                json.append("\"connected\":true,")
+                        .append("\"customerId\":").append(c.customerId).append(",")
+                        .append("\"username\":\"").append(escJson(c.username)).append("\",")
+                        .append("\"credit\":").append(c.credit == null ? "0.00" : c.credit.toPlainString());
+            }
+            json.append("}");
 
             resp.setStatus(200);
-            resp.getWriter().write(json);
+            resp.getWriter().write(json.toString());
 
         } catch (DaoException ex) {
             ex.printStackTrace();
