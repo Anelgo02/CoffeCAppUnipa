@@ -137,10 +137,22 @@
     }
 
     // Reset Hardware
-    document.getElementById("btn-reset-hardware").addEventListener("click", () => {
-        if(confirm("ATTENZIONE TECNICO: Vuoi resettare l'identità della macchina?")) {
+    document.getElementById("btn-reset-hardware").addEventListener("click", async () => {
+        if (!confirm("ATTENZIONE TECNICO: Vuoi resettare l'identità della macchina? (Funzionalità di DEBUG)")) return;
+
+        try {
+            // 1) reset SERVER-SIDE: cancella token nel DB (richiede X-Distributor-Auth)
+            await apiPostForm("/api/distributor/reset", {});
+
+            // 2) reset LOCALE
             localStorage.removeItem("distributor_identity");
+            localStorage.removeItem("distributor_token");
+
+            // 3) torna al boot
             window.location.replace("boot.html");
+        } catch (e) {
+            console.error(e);
+            alert("Reset fallito: " + (e.message || "errore"));
         }
     });
 </script>

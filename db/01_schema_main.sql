@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS distributors (
                                             code          VARCHAR(50) NOT NULL UNIQUE, -- ID che l'utente inserisce (es. "UNIPA-001")
     location_name VARCHAR(120) NULL,
     status        ENUM('ACTIVE','MAINTENANCE','FAULT') NOT NULL DEFAULT 'ACTIVE',
+    security_token VARCHAR(100) NULL,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 

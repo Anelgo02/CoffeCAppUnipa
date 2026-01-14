@@ -1,4 +1,3 @@
-// src/main/java/com/example/coffecappunipa/persistence/dao/DistributorDAO.java
 package com.example.coffecappunipa.persistence.dao;
 
 import com.example.coffecappunipa.model.DistributorState;
@@ -40,6 +39,74 @@ public class DistributorDAO {
             throw new DaoException("Errore DistributorDAO.findStatusByCode()", e);
         }
     }
+
+    // --- METODI PER SICUREZZA TOKEN (SPRING SECURITY) ---
+
+    /**
+     * Cerca il codice del distributore dato il token di sicurezza.
+     * Usato dal Filtro di Spring Security per autenticare le richieste.
+     */
+    public String findCodeBySecurityToken(String token) {
+        String sql = "SELECT code FROM distributors WHERE security_token = ?";
+
+        try (Connection conn = DbConnectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, token);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("code"); // Es: "UNIPA-001"
+                }
+                return null; // Token non valido o non trovato
+            }
+        } catch (SQLException e) {
+            throw new DaoException("Errore findCodeBySecurityToken", e);
+        }
+    }
+
+    /**
+     * Aggiorna (o inserisce) il token di sicurezza per un distributore.
+     * Chiamato dalla DistributorBootServlet al momento dell'avvio.
+     */
+    public void updateSecurityToken(String code, String token) {
+        String sql = "UPDATE distributors SET security_token = ? WHERE code = ?";
+
+        try (Connection conn = DbConnectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            if (token == null) ps.setNull(1, java.sql.Types.VARCHAR);
+            else ps.setString(1, token);
+            ps.setString(2, code);
+
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                // Se non ha aggiornato nulla, forse il codice non esiste
+                throw new DaoException("Impossibile aggiornare token: codice non trovato " + code);
+            }
+
+        } catch (SQLException e) {
+            throw new DaoException("Errore DistributorDAO.updateSecurityToken()", e);
+        }
+    }
+
+    // ----------------------------------------------------
+
+    public String findSecurityTokenByCode(String code) throws DaoException {
+        String sql = "SELECT security_token FROM distributors WHERE code = ?";
+        try (Connection con = DbConnectionManager.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, code);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("security_token"); // può essere null
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new DaoException("Errore findSecurityTokenByCode()", e);
+        }
+    }
+
 
     public Long findIdByCode(String code) {
         String sql = "SELECT id FROM distributors WHERE code = ?";
@@ -174,12 +241,6 @@ public class DistributorDAO {
         }
     }
 
-    /**
-     * Applica in batch gli stati provenienti dal servizio Monitor.
-     * - Aggiorna SOLO i distributor già presenti nel DB principale (per code)
-     * - Normalizza status (ACTIVE/MAINTENANCE/FAULT)
-     * - Transazione unica (serio, non “giocattolo”)
-     */
     public SyncResult applyStatusesFromMonitor(Map<String, String> monitorStatuses) {
         if (monitorStatuses == null || monitorStatuses.isEmpty()) {
             return new SyncResult(0, 0, 0);
@@ -239,11 +300,6 @@ public class DistributorDAO {
         }
     }
 
-    /**
-     * Monitor -> DB principale.
-     * Monitor ti manda: ACTIVE | MAINTENANCE | FAULT
-     * DB principale usa gli stessi token (come hai già fatto).
-     */
     private String normalizeMonitorStatus(String status) {
         if (status == null) return null;
         String s = status.trim().toUpperCase();
@@ -252,7 +308,6 @@ public class DistributorDAO {
         if ("MAINTENANCE".equals(s)) return "MAINTENANCE";
         if ("FAULT".equals(s)) return "FAULT";
 
-        // se vuoi essere permissivo:
         if ("ATTIVO".equals(s)) return "ACTIVE";
         if ("MANUTENZIONE".equals(s)) return "MAINTENANCE";
         if ("GUASTO".equals(s)) return "FAULT";

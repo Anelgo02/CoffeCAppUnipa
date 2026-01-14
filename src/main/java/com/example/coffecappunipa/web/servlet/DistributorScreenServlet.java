@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal; // Import fondamentale per la sicurezza
 
 @WebServlet(urlPatterns = {
         "/api/distributor/poll",
@@ -27,6 +28,9 @@ public class DistributorScreenServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         setupJson(resp);
+
+        // SICUREZZA: Nessun controllo manuale necessario qui.
+        // Se Spring Security ha fatto passare la richiesta, req.getUserPrincipal() non è null.
 
         String uri = req.getRequestURI();
         if (uri.endsWith("/poll")) { handlePoll(req, resp); return; }
@@ -47,22 +51,24 @@ public class DistributorScreenServlet extends HttpServlet {
     }
 
     private void handlePoll(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = trim(req.getParameter("code"));
-        if (isBlank(code)) {
-            resp.setStatus(400);
-            resp.getWriter().write("{\"ok\":false,\"message\":\"code obbligatorio\"}");
+        // 1. RECUPERO IDENTITÀ SICURA
+        Principal principal = req.getUserPrincipal();
+        if (principal == null) {
+
+            resp.sendError(401, "Autenticazione mancante");
             return;
         }
+        String code = principal.getName(); // Restituisce il codice (es. UNIPA-001) estratto dal Token
 
         try {
-
+            // 2. Recupera Stato Operativo
             String status = distributorDAO.findStatusByCode(code);
-            if(status==null){
-                resp.setStatus(400);
-                resp.getWriter().write("{\"ok\":false,\"message\":\"code obbligatorio\"}");
-                return;
+            if(status == null){
+
+                status = "UNKNOWN";
             }
 
+            // 3. Recupera Utente Connesso (Logica Business)
             var opt = screenDAO.findConnectedCustomerByDistributorCode(code);
 
             // Costruiamo il JSON
@@ -120,13 +126,18 @@ public class DistributorScreenServlet extends HttpServlet {
     }
 
     private void handlePurchase(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = trim(req.getParameter("code"));
+        // 1. RECUPERO IDENTITÀ SICURA
+        Principal principal = req.getUserPrincipal();
+        if (principal == null) { resp.sendError(401); return; }
+        String code = principal.getName(); // Codice sicuro
+
+        // 2. Lettura Parametri Ordine
         String bevIdStr = trim(req.getParameter("beverageId"));
         String sugarStr = trim(req.getParameter("sugarQty"));
 
-        if (isBlank(code) || isBlank(bevIdStr)) {
+        if (isBlank(bevIdStr)) {
             resp.setStatus(400);
-            resp.getWriter().write("{\"ok\":false,\"message\":\"code e beverageId obbligatori\"}");
+            resp.getWriter().write("{\"ok\":false,\"message\":\"beverageId obbligatorio\"}");
             return;
         }
 
@@ -148,7 +159,8 @@ public class DistributorScreenServlet extends HttpServlet {
         if (sugarQty > 10) sugarQty = 10; // limite per non rompere scorte con input assurdi
 
         try {
-            // NB: prezzo e validazione bevanda avvengono nel DAO in transazione
+            // 3. Esecuzione Transazione
+            // Passiamo il codice sicuro recuperato dal token, non quello (eventuale) dell'URL
             var newCredit = screenDAO.performPurchase(code, bevId, sugarQty);
 
             resp.setStatus(200);

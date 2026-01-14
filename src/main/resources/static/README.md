@@ -65,16 +65,47 @@ Caratteristiche:
     - espone il token nel cookie `XSRF-TOKEN`
     - la SPA lo rimanda nelle richieste `POST` (tipicamente header `X-XSRF-TOKEN`)
 
-### 2) Autenticazione Dispositivi (Device-Centric)
-I distributori operano in modalità **kiosk** (unattended): niente password, niente login umano.
+### 2) Autenticazione Dispositivi (Device-Centric) — Token + Spring Security
 
-Strategia:
-- Le API del distributore (`/api/distributor/**`) sono configurate **permitAll** su Spring Security  
-  (evita redirect al login form)
-- La protezione avviene con **validazione applicativa**
-    - boot: invio ID hardware (es. `UNIPA-001`)
-    - la `DistributorBootServlet` valida l’ID nel DB
-    - se valido: l’ID viene salvato nel `localStorage` del browser del distributore (simula memoria flash)
+I distributori operano in modalità kiosk (unattended): niente credenziali umane.
+
+La sicurezza del canale IoT è implementata con un **token di dispositivo** gestito dal backend:
+
+- **Boot pubblico**: `POST /api/distributor/boot` è `permitAll` e **genera** un token unico.
+- **API operative protette**: le chiamate successive (`poll`, `beverages`, `purchase`) richiedono
+  l'header `X-Distributor-Auth: <token>`.
+- Un filtro Spring Security custom (`DistributorTokenFilter`) intercetta l'header, valida il token nel DB e,
+  se valido, crea un’`Authentication` con ruolo `ROLE_DISTRIBUTOR`.
+
+Quindi:
+- **solo l’endpoint di boot è pubblico**
+- le API operative sono **protette da Spring Security** tramite `hasRole("DISTRIBUTOR")`
+
+#### Flusso di sicurezza IoT (step-by-step)
+
+1) Boot (prima inizializzazione)
+- UI `boot.html` invia `POST /api/distributor/boot?code=UNIPA-001`
+- Backend verifica che il distributore esista
+- Backend genera `security_token` e lo salva nel DB
+- Frontend salva:
+    - `distributor_identity` (code)
+    - `distributor_token` (token)
+
+2) API operative
+- Ogni chiamata successiva invia `X-Distributor-Auth: <token>`
+- `DistributorTokenFilter`:
+    - legge l’header
+    - valida token nel DB
+    - inserisce nel `SecurityContext` un’identity “virtuale” con `ROLE_DISTRIBUTOR`
+- Le route `poll/beverages/purchase` sono autorizzate solo se `hasRole("DISTRIBUTOR")`
+
+---
+
+#### Policy Anti-Reboot (no clonazione / no doppia inizializzazione)
+
+La servlet di boot **non rigenera** un token se il distributore risulta già inizializzato:
+- Se nel DB è già presente un `security_token` non nullo → risposta `409 Conflict`
+- Motivazione: evitare che due kiosk diversi possano usare lo stesso codice distributore.
 
 ---
 
@@ -101,7 +132,8 @@ questa scelta consente l'attivazione tramite ID del distributore che è già sta
     - pagamento con **lock pessimistico** (`SELECT ... FOR UPDATE`)
     - prevenzione race condition (es. doppia erogazione / disconnessione durante pagamento)
 
->Nota: per testare diversi distributori da browser bisogna usare il bottone resetID per eliminare dalla memoria del kiosk l'identita' del distributore.
+>Nota: per testare diversi distributori da browser bisogna usare il bottone resetID per eliminare
+> dalla memoria del kiosk l'identita' del distributore e eliminare dal db il token di sicurezza.
 ---
 
 ## 📡 Integrazione con CoffeeMonitor (porta 8081)
@@ -152,6 +184,7 @@ Funzioni principali:
 - `GET  /api/distributor/poll` — Check presenza cliente (polling)
 - `GET  /api/distributor/beverages` — Listino prezzi
 - `POST /api/distributor/purchase` — Erogazione bevanda (transazione critica)
+- `POST /api/distributor/reset` — Reset Token per il distributore
 
 ---
 

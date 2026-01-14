@@ -50,10 +50,16 @@
 </footer>
 
 <script>
-    // 1. CHECK INIZIALE: Se la macchina ha già un'identità, vai subito all'Index.
+    // 1) CHECK: se ho già identity + token, salto a index
     const savedIdentity = localStorage.getItem("distributor_identity");
-    if (savedIdentity) {
+    const savedToken = localStorage.getItem("distributor_token");
+
+    if (savedIdentity && savedToken) {
         window.location.replace("index.html?code=" + encodeURIComponent(savedIdentity));
+    } else {
+        // se uno dei due manca, pulisco per evitare stati rotti
+        localStorage.removeItem("distributor_identity");
+        localStorage.removeItem("distributor_token");
     }
 
     const form = document.getElementById("boot-form");
@@ -70,6 +76,14 @@
         logBox.appendChild(line);
     }
 
+    function fail(msg) {
+        log("BOOT FALLITO", "error");
+        errorBox.textContent = msg || "Errore sconosciuto";
+        errorBox.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Riprova Avvio";
+    }
+
     form.addEventListener("submit", async () => {
         const code = document.getElementById("dist-code").value.trim();
         if (!code) return;
@@ -82,38 +96,44 @@
         log("Verifica connettività server...");
 
         try {
-            // Chiamata alla Servlet di Boot per validare l'ID
+            // POST su /api/distributor/boot (public)
             const response = await fetch("/api/distributor/boot?code=" + encodeURIComponent(code), {
-                method: "POST"
+                method: "POST",
+                credentials: "same-origin"
             });
 
-            let data;
-            try { data = await response.json(); } catch (e) { throw new Error("Errore comunicazione server"); }
-
-            if (response.ok && data.ok) {
-                log("Autenticazione hardware: OK", "success");
-
-                // --- SALVATAGGIO IDENTITÀ ---
-                localStorage.setItem("distributor_identity", code);
-
-                log("Avvio interfaccia grafica...", "success");
-
-                // Redirect relativo sicuro
-                setTimeout(() => {
-                    window.location.href = "index.html?code=" + encodeURIComponent(code);
-                }, 1000);
-
-            } else {
-                throw new Error(data.message || "Errore sconosciuto");
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error("Risposta server non valida (atteso JSON)");
             }
+
+            if (!response.ok || !data || !data.ok) {
+                throw new Error((data && data.message) ? data.message : "Boot rifiutato");
+            }
+
+            // ✅ Validazione: token obbligatorio
+            if (!data.token || typeof data.token !== "string" || data.token.trim().length < 10) {
+                throw new Error("Boot OK ma token mancante. Correggi /api/distributor/boot per restituire {token}");
+            }
+
+            log("Autenticazione hardware: OK", "success");
+
+            // Salvataggio identity + token
+            localStorage.setItem("distributor_identity", code);
+            localStorage.setItem("distributor_token", data.token.trim());
+
+            log("Token installato: OK", "success");
+            log("Avvio interfaccia grafica...", "success");
+
+            setTimeout(() => {
+                window.location.href = "index.html?code=" + encodeURIComponent(code);
+            }, 600);
 
         } catch (err) {
             console.error(err);
-            log("BOOT FALLITO", "error");
-            errorBox.textContent = err.message;
-            errorBox.style.display = "block";
-            btn.disabled = false;
-            btn.textContent = "Riprova Avvio";
+            fail(err.message);
         }
     });
 </script>

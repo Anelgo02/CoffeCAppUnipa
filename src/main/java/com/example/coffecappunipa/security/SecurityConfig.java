@@ -48,62 +48,66 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         // per evitare di dover iniettare CSRF nel form statico di login
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/auth/login", "/auth/logout", "/api/distributor/boot","/api/distributor/purchase")
+                        .ignoringRequestMatchers("/auth/login", "/auth/logout")
+                        // IMPORTANTE: Ignora CSRF per il distributore
+                        .ignoringRequestMatchers("/api/distributor/**")
                 )
 
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
-                .addFilterAfter(new LegacySessionBridgeFilter(), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new LegacySessionBridgeFilter(), UsernamePasswordAuthenticationFilter.class)
+
+                // Filtro custom per token distributore
+                .addFilterBefore(new DistributorTokenFilter(), UsernamePasswordAuthenticationFilter.class)
 
                 .authorizeHttpRequests(auth -> auth
-                        // static/public
+                        // 1. RISORSE STATICHE PUBBLICHE (HTML, CSS, JS)
                         .requestMatchers("/login.html", "/cliente/registrazione.html").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/data/**", "/favicon.ico").permitAll()
-                        .requestMatchers("/distributore/**").permitAll()
+                        .requestMatchers("/error", "/.well-known/**").permitAll()
 
-                        // public endpoints
+
+                        // --- PUNTO CRITICO: TUTTA LA CARTELLA DISTRIBUTORE DEVE ESSERE PUBBLICA ---
+                        // Questo permette di vedere boot.html e index.html senza login utente.
+                        .requestMatchers("/distributore/**", "/distributore","/distributore/").permitAll()
+
+                        // 2. API PUBBLICHE
                         .requestMatchers("/api/customer/register").permitAll()
-                        .requestMatchers("/api/distributor/boot","/api/distributor/poll", "/api/distributor/beverages", "/api/distributor/purchase").permitAll()
 
-                        // pages role-based
+                        // L'endpoint di BOOT deve essere pubblico per ottenere il primo token
+                        .requestMatchers("/api/distributor/boot").permitAll()
+
+                        // 3. API DISTRIBUTORE PROTETTE DA TOKEN (Ruolo DISTRIBUTOR assegnato dal filtro)
+                        .requestMatchers(
+                                "/api/distributor/poll",
+                                "/api/distributor/beverages",
+                                "/api/distributor/purchase",
+                                "/api/distributor/reset"
+                        ).hasRole("DISTRIBUTOR")
+
+                        // 4. API GESTORE
                         .requestMatchers("/gestore/**").hasRole("MANAGER")
-                        .requestMatchers("/manutenzione/**").hasRole("MAINTAINER")
-                        .requestMatchers("/cliente/**").hasRole("CUSTOMER")
-
                         .requestMatchers(
-                                "/api/manager/maintainers.xml",
-                                "/api/manager/maintainers/list",
-                                "/api/manager/maintainers/create",
-                                "/api/manager/maintainers/delete",
-                                "/api/manager/distributors/list",
-                                "/api/manager/distributors/create",
-                                "/api/manager/distributors/delete",
-                                "/api/manager/distributors/status",
+                                "/api/manager/**",
                                 "/api/monitor/sync"
+                        ).hasRole("MANAGER")
 
-                ).hasRole("MANAGER")
-
-                        // maintainer APIs
+                        // 5. API MANUTENTORE
+                        .requestMatchers("/manutenzione/**").hasRole("MAINTAINER")
                         .requestMatchers(
-                                "/api/maintainer/distributors/refill",
-                                "/api/maintainer/distributors/status"
+                                "/api/maintainer/**"
                         ).hasRole("MAINTAINER")
 
-
-                        // customer APIs
+                        // 6. API CLIENTE
+                        .requestMatchers("/cliente/**").hasRole("CUSTOMER")
                         .requestMatchers(
-                                "/api/customer/connect",
-                                "/api/customer/disconnect",
-                                "/api/customer/current-connection",
-                                "/api/customer/me",
-                                "/api/customer/get",
-                                "/api/customer/topup"
+                                "/api/customer/**"
                         ).hasRole("CUSTOMER")
 
+                        // API CONDIVISA (Mappa monitoraggio)
                         .requestMatchers("/api/monitor/map").hasAnyRole("MANAGER","MAINTAINER")
 
-
+                        // Tutto il resto richiede autenticazione
                         .anyRequest().authenticated()
-
                 )
                 .formLogin(form -> form
                         .loginPage("/login.html")
@@ -136,7 +140,6 @@ public class SecurityConfig {
                             }
                         })
                 )
-                // utile per curl/debug
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
