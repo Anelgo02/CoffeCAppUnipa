@@ -68,8 +68,8 @@ public class MaintainerDAO {
         }
     }
 
-    public long createMaintainer(String maintainerId, String firstName, String lastName, String email, String phone) {
-        String insUser = "INSERT INTO users(username, email, role, credit) VALUES(?, ?, 'MAINTAINER', 0.00)";
+    public long createMaintainer(String maintainerId, String firstName, String lastName, String email, String phone, String password_hash) {
+        String insUser = "INSERT INTO users(username, email, password_hash, role, credit) VALUES(?, ?,?, 'MAINTAINER', 0.00)";
         String insProf = "INSERT INTO maintainer_profiles(user_id, first_name, last_name, phone) VALUES(?, ?, ?, ?)";
 
         try (Connection conn = DbConnectionManager.getConnection()) {
@@ -78,8 +78,11 @@ public class MaintainerDAO {
             try (PreparedStatement psU = conn.prepareStatement(insUser, Statement.RETURN_GENERATED_KEYS);
                  PreparedStatement psP = conn.prepareStatement(insProf)) {
 
+
+
                 psU.setString(1, maintainerId);
                 psU.setString(2, email);
+                psU.setString(3, password_hash);
 
                 int uUpd = psU.executeUpdate();
                 if (uUpd != 1) throw new DaoException("Inserimento users fallito (updated=" + uUpd + ")");

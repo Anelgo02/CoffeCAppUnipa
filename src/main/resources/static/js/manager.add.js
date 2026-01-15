@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const cognome = (document.getElementById("m-cognome").value || "").trim();
             const telefono = (document.getElementById("m-telefono").value || "").trim();
             const email = (document.getElementById("m-email").value || "").trim();
+            const passwordRaw = (document.getElementById("m-password").value || "").trim();
 
             if (!id || !nome || !cognome || !telefono || !email) {
                 showAlert("Compila tutti i campi del manutentore.");
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             try {
                 await apiPostForm("/api/manager/maintainers/create", {
-                    id, nome, cognome, telefono, email
+                    id, nome, cognome, telefono, email, passwordRaw
                 });
 
                 showAlert("Manutentore salvato!");

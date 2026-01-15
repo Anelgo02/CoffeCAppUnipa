@@ -1,5 +1,6 @@
 package com.example.coffecappunipa.web.servlet;
 
+import ch.qos.logback.classic.encoder.JsonEncoder;
 import com.example.coffecappunipa.persistence.dao.DistributorAdminDAO;
 import com.example.coffecappunipa.persistence.dao.MaintainerDAO;
 import com.example.coffecappunipa.persistence.util.DaoException;
@@ -8,6 +9,7 @@ import com.example.coffecappunipa.web.monitor.MonitorClient;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +31,7 @@ public class ManagerServlet extends HttpServlet {
 
     private final MaintainerDAO maintainerDAO = new MaintainerDAO();
     private final DistributorAdminDAO distributorAdminDAO = new DistributorAdminDAO();
+    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -137,8 +140,9 @@ public class ManagerServlet extends HttpServlet {
         String cognome = trim(req.getParameter("cognome"));
         String email = trim(req.getParameter("email"));
         String telefono = trim(req.getParameter("telefono"));
+        String passwordRaw = trim(req.getParameter("passwordRaw"));
 
-        if (isBlank(id) || isBlank(nome) || isBlank(cognome) || isBlank(email) || isBlank(telefono)) {
+        if (isBlank(id) || isBlank(nome) || isBlank(cognome) || isBlank(email) || isBlank(telefono) || isBlank(passwordRaw)) {
             writeJson(resp, 400, "{\"ok\":false,\"message\":\"tutti i campi sono obbligatori\"}");
             return;
         }
@@ -149,7 +153,10 @@ public class ManagerServlet extends HttpServlet {
                 return;
             }
 
-            long userId = maintainerDAO.createMaintainer(id, nome, cognome, email, telefono);
+
+            String passwordHash = bCryptPasswordEncoder.encode(passwordRaw);
+
+            long userId = maintainerDAO.createMaintainer(id, nome, cognome, email, telefono, passwordHash);
             writeJson(resp, 201, "{\"ok\":true,\"userId\":" + userId + "}");
 
         } catch (DaoException ex) {
