@@ -52,14 +52,14 @@ function renderConnectedState(connected, user, machineStatus) {
     const form = document.getElementById("purchase-area");
     const btnDisconnect = document.getElementById("btn-disconnect-from-dist");
 
-    // 1. Controllo Stato Macchina (Priorità massima: se rotta, blocca tutto)
+
     if (machineStatus && machineStatus !== "ACTIVE") {
         if (maintScreen) {
             maintScreen.style.display = "block";
             standbyScreen.style.display = "none";
             activeScreen.style.display = "none";
 
-            // Aggiorna messaggio specifico se esiste nell'HTML
+
             const msgEl = document.getElementById("maintenance-msg");
             if(msgEl) {
                 if(machineStatus === "MAINTENANCE") msgEl.textContent = "⚠️ Manutenzione in corso";
@@ -209,21 +209,29 @@ async function doPurchase() {
     const sugarQty = document.getElementById("sugar-qty")?.value ?? "0";
 
     try {
+        // Usa apiPostForm (invierà il token nell'header)
         const res = await apiPostForm("/api/distributor/purchase", {
             code,
             beverageId,
             sugarQty
         });
 
-        if (res && res.ok) {
-            const creditEl = document.getElementById("dist-credit");
-            if (creditEl && typeof res.credit !== "undefined") {
-                creditEl.textContent = formatCurrency(res.credit);
-            }
-            showDistMessage("Erogazione in corso... Prendi il tuo caffè!", false, 4000);
-            selectedBtn.classList.remove("selected");
+        // Se il token non è nel localStorage, fallback: aggiunge il codice anche nell'URL
+        if (!res || !res.ok) {
+            console.log("Primo tentativo fallito, provo con code nell'URL...");
+            const res2 = await apiPostForm(
+                `/api/distributor/purchase?code=${encodeURIComponent(code)}`,
+                { beverageId, sugarQty }
+            );
 
-            pollConnectedUser();
+            if (res2 && res2.ok) {
+                handlePurchaseSuccess(res2, selectedBtn);
+                return;
+            }
+        }
+
+        if (res && res.ok) {
+            handlePurchaseSuccess(res, selectedBtn);
             return;
         }
 
@@ -240,6 +248,17 @@ async function doPurchase() {
             showDistMessage("Errore sistema: " + err.message, true, 3000);
         }
     }
+}
+
+// Helper per gestire il successo
+function handlePurchaseSuccess(res, selectedBtn) {
+    const creditEl = document.getElementById("dist-credit");
+    if (creditEl && typeof res.credit !== "undefined") {
+        creditEl.textContent = formatCurrency(res.credit);
+    }
+    showDistMessage("Erogazione in corso... Prendi il tuo caffè!", false, 4000);
+    selectedBtn.classList.remove("selected");
+    pollConnectedUser();
 }
 
 /**

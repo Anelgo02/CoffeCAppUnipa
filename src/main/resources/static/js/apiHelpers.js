@@ -19,17 +19,17 @@ function resetDistributorIdentity() {
 
 function isDistributorContext() {
     const pathname = window.location.pathname;
-
-    return pathname === "/distributore" || pathname.startsWith("/distributore/");
+    return pathname.includes("/distributore/") || pathname.startsWith("/distributore");
 }
 
 function isBootPage() {
-    return window.location.pathname.endsWith("/boot.html");
+    return window.location.pathname.endsWith("boot.html");
 }
 
 function goToDistributorBoot() {
     resetDistributorIdentity();
-    window.location.href = "/distributore/boot.html";
+    // Usiamo replace per non intasare la history
+    window.location.replace("/distributore/boot.html");
 }
 
 // ============================================================
@@ -43,12 +43,15 @@ async function handleFetchResponse(res) {
 
         // Distributore: token invalido -> reset + boot
         if (isDistributorContext()) {
-            if (!isBootPage()) {
-                console.error("Token distributore invalido/scaduto. Reset + redirect BOOT.");
-                goToDistributorBoot();
+            // Se siamo GIA' nella pagina di boot, NON facciamo nulla per evitare loop.
+            // Lasciamo che la pagina di boot mostri l'errore.
+            if (isBootPage()) {
+                return await res.json().catch(() => null);
             }
-            // In boot: ritorniamo body per mostrare messaggio
-            return await res.json().catch(() => null);
+
+            console.error("Token distributore invalido/scaduto. Reset + redirect BOOT.");
+            goToDistributorBoot();
+            return null; // Interrompe il flusso
         }
 
         // Altri ruoli: login
@@ -67,7 +70,7 @@ async function handleFetchResponse(res) {
         console.warn("Errore parsing response:", e);
     }
 
-    // 3) HTTP errors
+    // 3) HTTP errors (4xx, 5xx diversi da auth)
     if (!res.ok) {
         const msg =
             (payload && payload.message) ? payload.message :
@@ -112,25 +115,41 @@ function csrfHeader() {
 // ============================================================
 
 async function apiFetch(url, options = {}) {
+
     const token = getDistributorToken();
 
     // Headers merge robusto
     const headers = new Headers(options.headers || {});
 
-    // Token distributore (solo se presente)
+
     if (token) {
         headers.set(DIST_HEADER, token);
     }
 
     // Default credentials: same-origin (cookie session per utenti loggati)
+    // Nota: Se headers è Headers object, fetch lo gestisce. Se è oggetto, ok.
+    // Qui usiamo oggetto semplice per compatibilità con csrfHeader
+    const finalHeaders = {};
+    headers.forEach((v, k) => finalHeaders[k] = v);
+
+    // Merge con eventuali default se non sovrascritti
+    if (!finalHeaders["Content-Type"] && !options.body) {
+        // GET non ha content type di solito, ma POST sì
+    }
+
     const finalOptions = {
         credentials: "same-origin",
         ...options,
-        headers
+        headers: finalHeaders
     };
 
-    const res = await fetch(url, finalOptions);
-    return handleFetchResponse(res);
+    try {
+        const res = await fetch(url, finalOptions);
+        return handleFetchResponse(res);
+    } catch (error) {
+        console.error("Errore di rete in apiFetch:", error);
+        throw error;
+    }
 }
 
 // ============================================================
@@ -139,7 +158,11 @@ async function apiFetch(url, options = {}) {
 
 // GET
 async function apiGet(url) {
-    return apiFetch(noCacheUrl(url), { method: "GET" });
+    // Usa apiFetch per avere la logica centralizzata del token
+    return apiFetch(noCacheUrl(url), {
+        method: "GET",
+        headers: { ...csrfHeader() } // CSRF anche in GET se serve, o vuoto
+    });
 }
 
 // Compatibilità
@@ -188,6 +211,7 @@ function formatCurrency(val) {
 }
 
 async function fetchXML(url) {
+    // XML usa fetch diretta per semplicità, ma aggiungiamo credenziali
     const res = await fetch(noCacheUrl(url), { credentials: "same-origin" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const txt = await res.text();

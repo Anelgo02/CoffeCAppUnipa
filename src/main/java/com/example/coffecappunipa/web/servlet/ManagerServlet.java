@@ -267,7 +267,7 @@ public class ManagerServlet extends HttpServlet {
         // DB in MAINTENANCE è “bloccante”: prevale sempre
         if ("MAINTENANCE".equals(db)) return "MANUTENZIONE";
 
-        // Se il monitor dice FAULT, e non sei in manutenzione, mostra GUASTO (runtime > DB)
+
         if ("FAULT".equals(mon) && !"MAINTENANCE".equals(db)) return "GUASTO";
 
         if ("ACTIVE".equals(db)) return "ATTIVO";
@@ -296,10 +296,10 @@ public class ManagerServlet extends HttpServlet {
         try {
             long distId = distributorAdminDAO.createDistributorWithSupplies(id, loc, statusEnum);
 
-            // Allinea il monitor al DB (best-effort)
+            // Allineo il monitor al DB (best-effort)
             MonitorClient.upsertDistributor(id, loc, statusEnum);
 
-            // 🔥 FIX: heartbeat SOLO se lo stato è ACTIVE
+            //FIX: heartbeat SOLO se lo stato è ACTIVE
             if (isActive(statusEnum)) {
                 MonitorClient.heartbeat(id);
             }

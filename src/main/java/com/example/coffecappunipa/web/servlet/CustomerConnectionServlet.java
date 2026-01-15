@@ -63,12 +63,14 @@ public class CustomerConnectionServlet extends HttpServlet {
             return;
         }
 
-        String code = req.getParameter("code");
-        if (isBlank(code)) {
+        String codeRaw = req.getParameter("code");
+        if (isBlank(codeRaw)) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write("{\"ok\":false,\"message\":\"code obbligatorio\"}");
             return;
         }
+
+        String code = codeRaw.trim();
 
         try {
             var userOpt = userDAO.findByUsername(username);
@@ -92,6 +94,7 @@ public class CustomerConnectionServlet extends HttpServlet {
             // 2) FAULT runtime (monitor) => blocca
             // 3) FAULT nel DB principale => blocca (opzionale)
             // -----------------------------
+
 
             String dbStatus = safeUpper(distributorDAO.findStatusByCode(code)); // ACTIVE/MAINTENANCE/FAULT
 

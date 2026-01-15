@@ -14,20 +14,27 @@ public class ConnectionDAO {
         String closePrev = "UPDATE customer_connections SET disconnected_at = NOW() " +
                 "WHERE customer_id = ? AND disconnected_at IS NULL";
 
+        String closeDistributorPrev = "UPDATE customer_connections SET disconnected_at = NOW() " +
+                "WHERE distributorId = ? AND disconnected_at IS NULL";
+
         String insertNew = "INSERT INTO customer_connections(customer_id, distributor_id) VALUES(?, ?)";
 
         try (Connection conn = DbConnectionManager.getConnection()) {
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps1 = conn.prepareStatement(closePrev);
-                 PreparedStatement ps2 = conn.prepareStatement(insertNew)) {
+                 PreparedStatement ps2 = conn.prepareStatement(closeDistributorPrev);
+                 PreparedStatement psIns = conn.prepareStatement(insertNew)) {
 
                 ps1.setLong(1, customerId);
                 ps1.executeUpdate();
 
-                ps2.setLong(1, customerId);
-                ps2.setLong(2, distributorId);
-                int ins = ps2.executeUpdate();
+                ps2.setLong(1, distributorId);
+                ps2.executeUpdate();
+
+                psIns.setLong(1, customerId);
+                psIns.setLong(2, distributorId);
+                int ins = psIns.executeUpdate();
                 if (ins != 1) throw new DaoException("Inserimento connessione fallito (righe=" + ins + ")");
 
                 conn.commit();

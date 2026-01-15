@@ -81,6 +81,10 @@ Quindi:
 - **solo l’endpoint di boot è pubblico**
 - le API operative sono **protette da Spring Security** tramite `hasRole("DISTRIBUTOR")`
 
+>Nota: per il corretto testing dell'applicazione è consigliato aprire diversi browser o diverse finestre in incognito,
+> poiché aprire più tab sullo stesso browser con diverse tipologie di utente potrebbe
+> invalidare le sessioni. 
+> 
 #### Flusso di sicurezza IoT (step-by-step)
 
 1) Boot (prima inizializzazione)
@@ -117,8 +121,8 @@ questa scelta consente l'attivazione tramite ID del distributore che è già sta
 ### Boot (primo avvio)
 - Uno script “guardiano” controlla `localStorage`
 - Se l’identità macchina non esiste → redirect forzato a `boot.html`
-- Il tecnico inserisce il codice macchina (es. `UNIPA-001`)
-- Il backend valida e registra l’attivazione
+- Il tecnico inserisce il codice macchina (es. `UNIPA-001`) pre-censito dal manager. 
+- Il backend valida e registra l’attivazione rispondendo con il token di sicurezza.
 
 ### Standby (idle mode)
 - Loop di **polling** verso il server (es. ogni 3s)
@@ -134,6 +138,9 @@ questa scelta consente l'attivazione tramite ID del distributore che è già sta
 
 >Nota: per testare diversi distributori da browser bisogna usare il bottone resetID per eliminare
 > dalla memoria del kiosk l'identita' del distributore e eliminare dal db il token di sicurezza.
+> Viene fatto presente sempre che il distributore deve stare su un browser a parte per poter
+> funzionare in maniera coerente col progetto, averlo sullo stesso browser degli utenti romperebbe la sessione e
+> non ne permetterebbe l'utilizzo.
 ---
 
 ## 📡 Integrazione con CoffeeMonitor (porta 8081)

@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/error", "/.well-known/**").permitAll()
 
 
-                        // --- PUNTO CRITICO: TUTTA LA CARTELLA DISTRIBUTORE DEVE ESSERE PUBBLICA ---
+
                         // Questo permette di vedere boot.html e index.html senza login utente.
                         .requestMatchers("/distributore/**", "/distributore","/distributore/").permitAll()
 
