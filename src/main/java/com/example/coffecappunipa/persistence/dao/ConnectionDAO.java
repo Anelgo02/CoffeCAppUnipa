@@ -15,7 +15,7 @@ public class ConnectionDAO {
                 "WHERE customer_id = ? AND disconnected_at IS NULL";
 
         String closeDistributorPrev = "UPDATE customer_connections SET disconnected_at = NOW() " +
-                "WHERE distributorId = ? AND disconnected_at IS NULL";
+                "WHERE distributor_id = ? AND disconnected_at IS NULL";
 
         String insertNew = "INSERT INTO customer_connections(customer_id, distributor_id) VALUES(?, ?)";
 
