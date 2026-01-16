@@ -3,18 +3,18 @@
 --    Esegui come root o utente con privilegi (una sola volta)
 -- ============================================================
 
--- Crea il DB se non esiste (opzionale ma utile)
+-- Crea il DB se non esiste
 CREATE DATABASE IF NOT EXISTS coffe_app
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
 -- Utente applicativo (solo per coffe_app)
-DROP USER IF EXISTS 'coffe_app_user'@'localhost';
-CREATE USER 'coffe_app_user'@'localhost' IDENTIFIED BY 'CoffeeApp2026!';
+DROP USER IF EXISTS 'coffe'@'localhost';
+CREATE USER 'coffe'@'localhost' IDENTIFIED BY 'coffe_pwd!';
 
 -- Permessi minimi necessari all'app (CRUD + indici)
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-      ON coffe_app.* TO 'coffe_app_user'@'localhost';
+      ON coffe_app.* TO 'coffe'@'localhost';
 
 FLUSH PRIVILEGES;
 
@@ -146,10 +146,10 @@ INSERT INTO beverages(name, price) VALUES
 
 -- Utenti demo
 INSERT INTO users(username, role, credit, email) VALUES
-                                                     ('cliente1','CUSTOMER', 5.00, 'cliente1@unipa.it'),
-                                                     ('maint1','MAINTAINER', 0.00, 'maint1@unipa.it'),
-                                                     ('admin1','MANAGER', 0.00, 'admin1@unipa.it')
-    ON DUPLICATE KEY UPDATE role = VALUES(role), credit = VALUES(credit), email = VALUES(email);
+                                                     ('cliente1','CUSTOMER', 5.00, 'cliente1@unipa.it', '$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe'),
+                                                     ('maint1','MAINTAINER', 0.00, 'maint1@unipa.it', '$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe'),
+                                                     ('admin1','MANAGER', 0.00, 'admin1@unipa.it', '$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe')
+    ON DUPLICATE KEY UPDATE role = VALUES(role), credit = VALUES(credit), email = VALUES(email), password_hash = VALUES(password_hash);
 
 -- Profilo manutentore demo (collegato a maint1)
 INSERT INTO maintainer_profiles(user_id, first_name, last_name, phone)
