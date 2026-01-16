@@ -15,7 +15,7 @@ public class DbUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        var opt = userDAO.findByUsernameWithPassword(username); // da aggiungere
+        var opt = userDAO.findByUsernameWithPassword(username);
         if (opt.isEmpty()) throw new UsernameNotFoundException("User not found");
 
         var u = opt.get();

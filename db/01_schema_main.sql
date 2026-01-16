@@ -125,19 +125,21 @@ INSERT INTO beverages(name, price) VALUES
     ON DUPLICATE KEY UPDATE price = VALUES(price);
 
 -- Utenti demo
-INSERT INTO users(username, role, credit, email) VALUES
-                                                     ('cliente1','CUSTOMER', 5.00, 'cliente1@unipa.it','$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lE9lE9lE9lE'),
-                                                     ('maint1','MAINTAINER', 0.00, 'maint1@unipa.it', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lE9lE9lE9lE'),
-                                                     ('admin1','MANAGER', 0.00, 'admin1@unipa.it', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lE9lE9lE9lE')
+INSERT INTO users(username, role, credit, email, password_hash) VALUES
+                                                     ('cliente1','CUSTOMER', 5.00, 'cliente1@unipa.it','$2b$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe'),
+                                                     ('maint1','MAINTAINER', 0.00, 'maint1@unipa.it', '$2b$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe'),
+                                                     ('admin1','MANAGER', 0.00, 'admin1@unipa.it', '$2b$10$SSIg.3HK/VVfQADe3DAzkeDvPUvAgeZoN3zZ3FxfMrmIL0IzrMUOe')
     ON DUPLICATE KEY UPDATE role = VALUES(role), credit = VALUES(credit), email = VALUES(email), password_hash = VALUES(password_hash);
 
 -- Profilo manutentore demo (collegato a maint1)
 INSERT INTO maintainer_profiles(user_id, first_name, last_name, phone)
 SELECT u.id, 'Giuseppe', 'Verdi', '091123456'
 FROM users u
-WHERE u.username = 'maint1'
-    ON DUPLICATE KEY UPDATE first_name = VALUES(first_name), last_name = VALUES(last_name), phone = VALUES(phone);
-
+WHERE u.username = 'maint1' AND u.role = 'MAINTAINER'
+ON DUPLICATE KEY UPDATE
+                     first_name = VALUES(first_name),
+                     last_name  = VALUES(last_name),
+                     phone      = VALUES(phone);
 -- Distributori demo
 INSERT INTO distributors(code, location_name, status) VALUES
                                                           ('UNIPA-001','Edificio 1', 'ACTIVE'),
