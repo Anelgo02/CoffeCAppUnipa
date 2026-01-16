@@ -11,7 +11,6 @@ Il progetto implementa un’architettura **Web/IoT ibrida** per la gestione di u
 ---
 
 ## Obiettivi (in pratica)
-- **Separare nettamente** client (SPA) e server (API) senza rendering lato server.
 - Usare **Servlet standard** (Jakarta EE) come controller, dentro un container Spring Boot.
 - Persistenza **JDBC puro + DAO**, con controllo totale su SQL e transazioni.
 - Security “ibrida”: **utenti umani** con Spring Security + **dispositivi IoT** con validazione applicativa.
@@ -22,11 +21,10 @@ Il progetto implementa un’architettura **Web/IoT ibrida** per la gestione di u
 
 ### Backend
 - **Java + Spring Boot** (come container per **Servlet Jakarta EE**)
-- **Pattern MVC** (controller = servlet, model = DAO/entità, view = SPA statica)
+- **Pattern MVC** (controller = servlet, model = DAO/entità, view = SPA)
 - **Persistenza: DAO + JDBC puro**
     - **Niente ORM (Hibernate/JPA)**: scelta intenzionale per:
         - controllo assoluto sulle query SQL
-        - performance e prevenzione N+1 (batch loading dove necessario)
         - gestione manuale delle transazioni **ACID** (commit/rollback) in operazioni critiche (es. pagamenti)
 
 ### Frontend
@@ -160,7 +158,6 @@ Funzioni principali:
 
 ## 🔌 API Endpoints (Servlet)
 
-> Nota: gli endpoint “Area Distributore” sono **pubblici a livello Spring Security** ma protetti con logica applicativa (validazione ID + stato macchina).
 
 ### Area Gestore (`ROLE_MANAGER`)
 - `GET  /api/manager/maintainers.xml` — Export XML staff (generazione manuale via `StringBuilder`)
